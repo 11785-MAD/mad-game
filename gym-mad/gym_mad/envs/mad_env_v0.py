@@ -55,7 +55,32 @@ class MadState_v0:
         self.has_made_threat_a = self.ic_has_made_threat
         self.has_made_threat_b = self.ic_has_made_threat
 
-    # Property decorators
+    # Property decoratory
+    # Observations for each agent
+    @property
+    def observation_a(self):
+        return self.data[0:5]
+
+    @property
+    def observation_b(self):
+        return self.data[5:10]
+
+    # State of each agent
+    @property
+    def state_a(self):
+        return self.data[0:5]
+
+    @state_a.setter
+    def state_a(self, x):
+        self.data[0:5] = x
+
+    @property
+    def state_b(self):
+        return self.data[5:10]
+
+    @state_b.setter
+    def state_b(self, x):
+        self.data[5:10] = x
 
     # Player A
     # Cash A
@@ -151,7 +176,7 @@ class MadState_v0:
 
     def __repr__(self):
         repr_str = ''
-        exclude_list = ['__', 'ic', 'idx', 'data']
+        exclude_list = ['__', 'ic', 'idx', 'data', 'observation', 'state']
         for attr in dir(self):
             is_excluded = False
             for e in exclude_list:
@@ -240,6 +265,8 @@ class MadAction_v0:
 
 class MadEnv_v0(gym.Env):
     metadata = {'render.modes': ['human']}
+    agent_a = 'Agent A'
+    agent_b = 'Agent B'
 
     def __init__(self):
         self.reset()
@@ -248,14 +275,56 @@ class MadEnv_v0(gym.Env):
         A = MadAction_v0(A)
         print(A)
 
-        observation = self.S
-        reward = 0.0
-        done = False
+        # Seperate player states
+        if self.current_player == self.agent_a:
+            playing_agent_state = self.S.state_a
+            waiting_agent_state = self.S.state_b
+        else:
+            playing_agent_state = self.S.state_b
+            waiting_agent_state = self.S.state_a
+
+        # Execute game dynamics
+        new_playing_agent_state, new_waiting_agent_state = self.game_dynamics(
+                                                                              playing_agent_state,
+                                                                              waiting_agent_state,
+                                                                              A)
+
+        # Update Player States
+        if self.current_player == self.agent_a:
+            self.S.state_a = new_playing_agent_state
+            self.S.state_b = new_waiting_agent_state
+        else:
+            self.S.state_a = new_waiting_agent_state
+            self.S.state_b = new_playing_agent_state
+
+        observation = dict()
+        observation[self.agent_a] = self.S.observation_a
+        observation[self.agent_b] = self.S.observation_b
+        reward, done = self.get_reward()
         info = dict()
+
+        self.change_playing_agent()
+        info['current_player'] = self.current_player
 
         return observation, reward, done, info
 
+    def game_dynamics(self, playing_agent_state, waiting_agent_state, action):
+        return playing_agent_state, waiting_agent_state
+
+    def get_reward(self):
+        # TODO
+        reward = 0.0
+        done = False
+        return reward, done
+
+    def change_playing_agent(self):
+        if self.current_player == self.agent_a:
+            self.current_player = self.agent_b
+        else:
+            self.current_player = self.agent_a
+
     def reset(self):
+        self.current_player = self.agent_a
         self.S = MadState_v0()
 
     def render(self, mode='human', close=False):
