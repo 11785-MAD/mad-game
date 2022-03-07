@@ -42,6 +42,8 @@ class MadState_v0:
     idx_has_made_threat_b = 8
     idx_has_nukes_b = 9
 
+    observation_size = 5
+
     def __init__(self):
         self.data = np.zeros((10), dtype='int')
 
@@ -211,6 +213,8 @@ class MadAction_v0:
     idx_attack = 3
     idx_nuke = 4
 
+    action_size = 5
+
     def __init__(self, data):
         if not isinstance(data, np.ndarray):
             raise ValueError("Data must be of type numpy.ndarray")
@@ -243,9 +247,19 @@ class MadAction_v0:
     def nuke(self):
         return self.data[self.idx_nuke].astype(bool)
 
+    @property
+    def action_str(self):
+        actions = ["Invest Economy",
+                   "Invest Military",
+                   "Threaten",
+                   "Attack",
+                   "Nuke"]
+
+        return actions[np.where(self.data == 1)[0][0]]
+
     def __repr__(self):
         repr_str = ''
-        exclude_list = ['__', 'idx', 'data']
+        exclude_list = ['__', 'idx', 'data', 'action']
         for attr in dir(self):
             is_excluded = False
             for e in exclude_list:
@@ -273,7 +287,6 @@ class MadEnv_v0(gym.Env):
 
     def step(self, A):
         A = MadAction_v0(A)
-        print(A)
 
         # Seperate player states
         if self.current_player == self.agent_a:
@@ -304,7 +317,7 @@ class MadEnv_v0(gym.Env):
         info = dict()
 
         self.change_playing_agent()
-        info['current_player'] = self.current_player
+        info['action'] = A
 
         return observation, reward, done, info
 
@@ -326,6 +339,19 @@ class MadEnv_v0(gym.Env):
     def reset(self):
         self.current_player = self.agent_a
         self.S = MadState_v0()
+        observation = dict()
+        observation[self.agent_a] = self.S.observation_a
+        observation[self.agent_b] = self.S.observation_b
+
+        return observation
 
     def render(self, mode='human', close=False):
         print(self.S)
+
+    @property
+    def observation_size(self):
+        return MadState_v0.observation_size
+
+    @property
+    def action_size(self):
+        return MadAction_v0.action_size
