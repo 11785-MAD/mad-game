@@ -169,17 +169,94 @@ class MadState_v0:
         return repr_str
 
 
+class MadAction_v0:
+    '''
+    Game Action
+
+    Invest in economy
+    Invest in military
+    Threaten to attack
+    Attack
+    Nuke
+    '''
+
+    idx_invest_economy = 0
+    idx_invest_military = 1
+    idx_threaten = 2
+    idx_attack = 3
+    idx_nuke = 4
+
+    def __init__(self, data):
+        if not isinstance(data, np.ndarray):
+            raise ValueError("Data must be of type numpy.ndarray")
+
+        if not data.shape == (5,):
+            raise ValueError("Data must be of shape (5,)")
+
+        if not (np.sum(data == 0) == 4 and np.sum(data == 1) == 1):
+            raise ValueError("Data must be one hot")
+
+        self.data = data
+
+    @property
+    def invest_economy(self):
+        return self.data[self.idx_invest_economy].astype(bool)
+
+    @property
+    def invest_military(self):
+        return self.data[self.idx_invest_military].astype(bool)
+
+    @property
+    def threaten(self):
+        return self.data[self.idx_threaten].astype(bool)
+
+    @property
+    def attack(self):
+        return self.data[self.idx_attack].astype(bool)
+
+    @property
+    def nuke(self):
+        return self.data[self.idx_nuke].astype(bool)
+
+    def __repr__(self):
+        repr_str = ''
+        exclude_list = ['__', 'idx', 'data']
+        for attr in dir(self):
+            is_excluded = False
+            for e in exclude_list:
+                if e in attr:
+                    is_excluded = True
+                    break
+
+            if is_excluded:
+                continue
+
+            attr_value = getattr(self, attr)
+            repr_str += "MadAction_v0.{:20} = {:>5}\n".format(
+                attr, attr_value)
+
+        return repr_str
+
+
 class MadEnv_v0(gym.Env):
     metadata = {'render.modes': ['human']}
 
     def __init__(self):
-        self.S = MadState_v0()
+        self.reset()
 
     def step(self, A):
-        pass
+        A = MadAction_v0(A)
+        print(A)
+
+        observation = self.S
+        reward = 0.0
+        done = False
+        info = dict()
+
+        return observation, reward, done, info
 
     def reset(self):
-        pass
+        self.S = MadState_v0()
 
     def render(self, mode='human', close=False):
         print(self.S)
