@@ -1,8 +1,8 @@
 import gym
 from gym import error, spaces, utils
-from gym import seeding
+from gym.utils import seeding
 
-class MadEnv-v0(gym.Env):
+class MadEnv_v0(gym.Env):
     metadata = {'render.modes': ['human']}
 
     def __init__(self):
