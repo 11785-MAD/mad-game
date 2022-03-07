@@ -352,8 +352,8 @@ class MadEnv_v0(gym.Env):
     agent_a = 'Agent A'
     agent_b = 'Agent B'
 
-    def __init__(self):
-        self.config = MadGameConfig_v0()
+    def __init__(self, config_filename=None):
+        self.config = MadGameConfig_v0(config_filename)
         self.reset()
 
     def step(self, A):
