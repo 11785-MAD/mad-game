@@ -1,0 +1,125 @@
+{
+    "Invest Economy": {
+        "player": {
+            "cash_threshold": 0,
+            "military_threshold": 0,
+            "requires_threat": 0,
+            "cash_delta": 0,
+            "income_delta": 0,
+            "military_delta": 0,
+            "has_made_threat_set": 0,
+            "has_made_threat_clear": 0
+        },
+        "enemy": {
+            "cash_delta": 0,
+            "income_delta": 0,
+            "military_delta": 0
+        },
+        "penalty": {
+            "insufficient_cash": 0,
+            "insufficient_military": 0,
+            "insufficient_threat": 0
+        },
+        "reward": 0
+    },
+    "Invest Military": {
+        "player": {
+            "cash_threshold": 0,
+            "military_threshold": 0,
+            "requires_threat": 0,
+            "cash_delta": 0,
+            "income_delta": 0,
+            "military_delta": 0,
+            "has_made_threat_set": 0,
+            "has_made_threat_clear": 0
+        },
+        "enemy": {
+            "cash_delta": 0,
+            "income_delta": 0,
+            "military_delta": 0
+        },
+        "penalty": {
+            "insufficient_cash": 0,
+            "insufficient_military": 0,
+            "insufficient_threat": 0
+        },
+        "reward": 0
+    },
+    "Threaten": {
+        "player": {
+            "cash_threshold": 0,
+            "military_threshold": 0,
+            "requires_threat": 0,
+            "cash_delta": 0,
+            "income_delta": 0,
+            "military_delta": 0,
+            "has_made_threat_set": 0,
+            "has_made_threat_clear": 0
+        },
+        "enemy": {
+            "cash_delta": 0,
+            "income_delta": 0,
+            "military_delta": 0
+        },
+        "penalty": {
+            "insufficient_cash": 0,
+            "insufficient_military": 0,
+            "insufficient_threat": 0
+        },
+        "reward": 0
+    },
+    "Attack": {
+        "player": {
+            "cash_threshold": 0,
+            "military_threshold": 0,
+            "requires_threat": 0,
+            "cash_delta": 0,
+            "income_delta": 0,
+            "military_delta": 0,
+            "has_made_threat_set": 0,
+            "has_made_threat_clear": 0
+        },
+        "enemy": {
+            "cash_delta": 0,
+            "income_delta": 0,
+            "military_delta": 0
+        },
+        "penalty": {
+            "insufficient_cash": 0,
+            "insufficient_military": 0,
+            "insufficient_threat": 0
+        },
+        "reward": 0
+    },
+    "Nuke": {
+        "player": {
+            "cash_threshold": 0,
+            "military_threshold": 0,
+            "requires_threat": 0,
+            "cash_delta": 0,
+            "income_delta": 0,
+            "military_delta": 0,
+            "has_made_threat_set": 0,
+            "has_made_threat_clear": 0
+        },
+        "enemy": {
+            "cash_delta": 0,
+            "income_delta": 0,
+            "military_delta": 0
+        },
+        "penalty": {
+            "insufficient_cash": 0,
+            "insufficient_military": 0,
+            "insufficient_threat": 0
+        },
+        "reward": 0
+    },
+    "ic": {
+        "cash": 10,
+        "income": 10,
+        "military": 10,
+        "has_made_threat": 10,
+        "has_nukes": 0
+    },
+    "win_reward": 0
+}

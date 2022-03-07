@@ -2,6 +2,8 @@ import gym
 from gym import error, spaces, utils
 from gym.utils import seeding
 import numpy as np
+import json
+import os
 
 
 class MadGameConfig_v0:
@@ -9,7 +11,10 @@ class MadGameConfig_v0:
     All game hyperparameters go in this config class
     '''
 
-    def __init__(self, path=None):
+    def __init__(self, filename=None):
+        '''
+        This function automatically finds path to config folder
+        '''
         self.data = dict()
         for action in MadAction_v0.action_strings:
             self.data[action] = dict()
@@ -41,13 +46,22 @@ class MadGameConfig_v0:
 
         self.data["win_reward"] = 0
 
-    def save_as_json(self, path):
-        # TODO
-        pass
+    def get_path_config_folder(self):
+        parent_dir = os.path.dirname(os.path.abspath(__file__))
+        config_dir = os.path.abspath(os.path.join(parent_dir, "../config/v0"))
+        return config_dir
 
-    def load_from_json(self, path):
-        # TODO
-        pass
+
+    def save_as_json(self, filename):
+        path = os.path.join(self.get_path_config_folder(),filename)
+        with open(path, 'w+') as f:
+            json.dump(obj=self.data, fp=f, indent=4)
+
+    def load_from_json(self, filename):
+        path = os.path.join(self.get_path_config_folder(),filename)
+        with open(path, 'r') as f:
+            data = json.load(f)
+            print(data)
 
 
 class MadState_v0:
@@ -231,8 +245,6 @@ class MadState_v0:
                 continue
 
             attr_value = getattr(self, attr)
-            # print(f"attr: {attr}")
-            # print(f"attr_value: {attr_value}")
             repr_str += "MadState_v0.{:20} = {:>5}\n".format(
                 attr, attr_value)
 
