@@ -3,23 +3,34 @@ from gym import error, spaces, utils
 from gym.utils import seeding
 import numpy as np
 
+
 class MadGameConfig_v0:
+    '''
+    All game hyperparameters go in this config class
+    '''
+
     def __init__(self, path=None):
         self.data = dict()
         for action in MadAction_v0.action_strings:
             self.data[action] = dict()
             self.data[action]["player"] = dict()
             self.data[action]["enemy"] = dict()
-            self.data[action]["player"]["cash_delta"] = 0
+            self.data[action]["penalty"] = dict()
             self.data[action]["player"]["cash_threshold"] = 0
+            self.data[action]["player"]["military_threshold"] = 0
+            self.data[action]["player"]["requires_threat"] = 0
+            self.data[action]["player"]["cash_delta"] = 0
             self.data[action]["player"]["income_delta"] = 0
             self.data[action]["player"]["military_delta"] = 0
-            self.data[action]["player"]["military_threshold"] = 0
             self.data[action]["player"]["has_made_threat_set"] = 0
             self.data[action]["player"]["has_made_threat_clear"] = 0
             self.data[action]["enemy"]["cash_delta"] = 0
             self.data[action]["enemy"]["income_delta"] = 0
             self.data[action]["enemy"]["military_delta"] = 0
+            self.data[action]["penalty"]["insufficient_cash"] = 0
+            self.data[action]["penalty"]["insufficient_military"] = 0
+            self.data[action]["penalty"]["insufficient_threat"] = 0
+            self.data[action]["reward"] = 0
 
         self.data["ic"] = dict()
         self.data["ic"]["cash"] = 10
@@ -28,7 +39,7 @@ class MadGameConfig_v0:
         self.data["ic"]["has_made_threat"] = 10
         self.data["ic"]["has_nukes"] = 0
 
-        self.data["nuke_threshold"] = 20
+        self.data["win_reward"] = 0
 
     def save_as_json(self, path):
         # TODO
@@ -38,9 +49,19 @@ class MadGameConfig_v0:
         # TODO
         pass
 
+
 class MadState_v0:
     '''
     Game State
+
+    Contains all information that an agent needs to know to make a move
+    Contains all information that the game env needs to know to process a move
+
+    All information is stored in a numpy array (dtype=int). Can be accessed through
+    various property decorators
+
+    A note on semantics: An "obervation" contains information that is available to an agent
+                         A "state" contains all information known to the game
 
     - Player A's
         - cash [int]
@@ -55,13 +76,6 @@ class MadState_v0:
         - has_made_threat [bool]
         - has_nukes [bool]
     '''
-
-    # Inital conditions
-    ic_cash = 10
-    ic_income = 10
-    ic_military = 10
-    ic_has_made_threat = 0
-    ic_has_nukes = 0
 
     # Data indexes
     idx_cash_a = 0
@@ -93,6 +107,14 @@ class MadState_v0:
         self.has_nukes_a = config.data["ic"]["has_nukes"]
         self.has_nukes_b = config.data["ic"]["has_nukes"]
 
+    def swap_agents(self):
+        '''
+        Swaps the state of the agents
+        '''
+        tmp = self.data[0:5]
+        self.data[0:5] = self.data[5:10]
+        self.data[5:10] = tmp
+
     # Property decoratory
     # Observations for each agent
     @property
@@ -102,23 +124,6 @@ class MadState_v0:
     @property
     def observation_b(self):
         return self.data[5:10]
-
-    # State of each agent
-    @property
-    def state_a(self):
-        return self.data[0:5]
-
-    @state_a.setter
-    def state_a(self, x):
-        self.data[0:5] = x
-
-    @property
-    def state_b(self):
-        return self.data[5:10]
-
-    @state_b.setter
-    def state_b(self, x):
-        self.data[5:10] = x
 
     # Player A
     # Cash A
@@ -214,7 +219,7 @@ class MadState_v0:
 
     def __repr__(self):
         repr_str = ''
-        exclude_list = ['__', 'ic', 'idx', 'data', 'observation', 'state']
+        exclude_list = ['__', 'ic', 'idx', 'data', 'observation', 'swap']
         for attr in dir(self):
             is_excluded = False
             for e in exclude_list:
@@ -226,6 +231,8 @@ class MadState_v0:
                 continue
 
             attr_value = getattr(self, attr)
+            # print(f"attr: {attr}")
+            # print(f"attr_value: {attr_value}")
             repr_str += "MadState_v0.{:20} = {:>5}\n".format(
                 attr, attr_value)
 
@@ -241,6 +248,9 @@ class MadAction_v0:
     Threaten to attack
     Attack
     Nuke
+
+    Is contructed from a 1-hot numpy array. The index of the 1
+    indicates the action to be taken
     '''
 
     idx_invest_economy = 0
@@ -257,10 +267,10 @@ class MadAction_v0:
     action_attack = "Attack"
     action_nuke = "Nuke"
     action_strings = [action_invest_economy,
-                        action_invest_military,
-                        action_threaten,
-                        action_attack,
-                        action_nuke]
+                      action_invest_military,
+                      action_threaten,
+                      action_attack,
+                      action_nuke]
 
     def __init__(self, data):
         if not isinstance(data, np.ndarray):
@@ -320,6 +330,12 @@ class MadAction_v0:
 
 
 class MadEnv_v0(gym.Env):
+    '''
+    Game environment
+
+    Unlike other gym environments, step returns a dictionary with an observation for each agent
+    '''
+
     metadata = {'render.modes': ['human']}
     agent_a = 'Agent A'
     agent_b = 'Agent B'
@@ -333,46 +349,113 @@ class MadEnv_v0(gym.Env):
 
         # Seperate player states
         if self.current_player == self.agent_a:
-            playing_agent_state = self.S.state_a
-            waiting_agent_state = self.S.state_b
+            reward, done, winner = self.game_dynamics(A)
         else:
-            playing_agent_state = self.S.state_b
-            waiting_agent_state = self.S.state_a
-
-        # Execute game dynamics
-        new_playing_agent_state, new_waiting_agent_state = self.game_dynamics(
-                                                                              playing_agent_state,
-                                                                              waiting_agent_state,
-                                                                              A)
-
-        # Update Player States
-        if self.current_player == self.agent_a:
-            self.S.state_a = new_playing_agent_state
-            self.S.state_b = new_waiting_agent_state
-        else:
-            self.S.state_a = new_waiting_agent_state
-            self.S.state_b = new_playing_agent_state
+            self.S.swap_agents()  # Game dynamics assumes playing agent is A
+            # Since be is playing, swap agents so that b is a and a is b
+            # then swap back
+            reward, done, winner = self.game_dynamics(A)
+            self.S.swap_agents()
 
         observation = dict()
         observation[self.agent_a] = self.S.observation_a
         observation[self.agent_b] = self.S.observation_b
-        reward, done = self.get_reward()
-        info = dict()
 
         self.change_playing_agent()
+
+        info = dict()
         info['action'] = A
+        info['winner'] = winner
 
         return observation, reward, done, info
 
-    def game_dynamics(self, playing_agent_state, waiting_agent_state, action):
-        #TODO move these numbers into a config file
-        return playing_agent_state, waiting_agent_state
+    def game_dynamics(self, action):
+        '''
+        Assumes the playing agent is agent_a
+        and the waiting agent is agent_b
 
-    def get_reward(self):
-        # TODO
-        reward = 0.0
+        Return rewards, done, winner
+        Updates state in place
+        '''
+        # TODO move these numbers into a config file
+        action_str = action.action_str
+        action_dict = self.config.data[action_str]
+
+        reward = 0
         done = False
-        return reward, done
+        winner = False
+
+        # Check to see if player has resources to execute action
+        has_enough_cash = self.S.cash_a >= action_dict["player"][
+            "cash_threshold"]
+        if not has_enough_cash:
+            reward += action_dict["penalty"]["insufficient_cash"]
+            return reward, done, winner
+
+        has_enough_military = self.S.cash_a >= action_dict["player"][
+            "military_threshold"]
+        if not has_enough_military:
+            reward += action_dict["penalty"]["insufficient_military"]
+            return reward, done, winner
+
+        if action_dict["player"]["requires_threat"] and not self.S.has_made_threat_a:
+            reward += action_dict["penalty"]["insufficient_threat"]
+            return reward, done, winner
+
+        # Player has enough resources for the action, execute the action
+        # Update player resources
+        self.S.cash_a = max(
+            0,
+            self.S.cash_a +
+            action_dict["player"]["cash_delta"])
+        self.S.income_a = max(
+            0,
+            self.S.income_a +
+            action_dict["player"]["income_delta"])
+        self.S.military_a = max(
+            0,
+            self.S.military_a +
+            action_dict["player"]["military_delta"])
+
+        # Set or clear threat
+        if action_dict["player"]["has_made_threat_set"]:
+            self.S.has_made_threat_a = 1
+
+        if action_dict["player"]["has_made_threat_clear"]:
+            self.S.has_made_threat_a = 0
+
+        self.S.cash_b = max(
+            0,
+            self.S.cash_b +
+            action_dict["enemy"]["cash_delta"])
+        self.S.income_b = max(
+            0,
+            self.S.income_b +
+            action_dict["enemy"]["income_delta"])
+        self.S.military_b = max(
+            0,
+            self.S.military_b +
+            action_dict["enemy"]["military_delta"])
+
+        reward = action_dict["reward"]
+
+        # If player has no money, no income, and not enough military to attack
+        # then they have lost
+        if self.S.cash_a == 0 and self.S.income_a == 0 and self.S.military_a < self.config.data[
+                MadAction_v0.action[MadAction_v0.idx_attack]]["player"]["cash_threshold"]:
+            done = True
+            winner = self.agent_b
+            reward += self.config.data["win_reward"]
+            return reward, done, winner
+
+        if self.S.cash_b == 0 and self.S.income_b == 0 and self.S.military_b < self.config.data[
+                MadAction_v0.action[MadAction_v0.idx_attack]]["player"]["cash_threshold"]:
+            done = True
+            winner = self.agent_a
+            reward += self.config.data["win_reward"]
+            return reward, done, winner
+
+        return reward, done, winner
 
     def change_playing_agent(self):
         if self.current_player == self.agent_a:
