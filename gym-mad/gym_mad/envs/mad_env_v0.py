@@ -3,6 +3,40 @@ from gym import error, spaces, utils
 from gym.utils import seeding
 import numpy as np
 
+class MadGameConfig_v0:
+    def __init__(self, path=None):
+        self.data = dict()
+        for action in MadAction_v0.action_strings:
+            self.data[action] = dict()
+            self.data[action]["player"] = dict()
+            self.data[action]["enemy"] = dict()
+            self.data[action]["player"]["cash_delta"] = 0
+            self.data[action]["player"]["cash_threshold"] = 0
+            self.data[action]["player"]["income_delta"] = 0
+            self.data[action]["player"]["military_delta"] = 0
+            self.data[action]["player"]["military_threshold"] = 0
+            self.data[action]["player"]["has_made_threat_set"] = 0
+            self.data[action]["player"]["has_made_threat_clear"] = 0
+            self.data[action]["enemy"]["cash_delta"] = 0
+            self.data[action]["enemy"]["income_delta"] = 0
+            self.data[action]["enemy"]["military_delta"] = 0
+
+        self.data["ic"] = dict()
+        self.data["ic"]["cash"] = 10
+        self.data["ic"]["income"] = 10
+        self.data["ic"]["military"] = 10
+        self.data["ic"]["has_made_threat"] = 10
+        self.data["ic"]["has_nukes"] = 0
+
+        self.data["nuke_threshold"] = 20
+
+    def save_as_json(self, path):
+        # TODO
+        pass
+
+    def load_from_json(self, path):
+        # TODO
+        pass
 
 class MadState_v0:
     '''
@@ -44,18 +78,20 @@ class MadState_v0:
 
     observation_size = 5
 
-    def __init__(self):
+    def __init__(self, config):
         self.data = np.zeros((10), dtype='int')
 
         # Setup initial conditions
-        self.cash_a = self.ic_cash
-        self.cash_b = self.ic_cash
-        self.income_a = self.ic_income
-        self.income_b = self.ic_income
-        self.military_a = self.ic_military
-        self.military_b = self.ic_military
-        self.has_made_threat_a = self.ic_has_made_threat
-        self.has_made_threat_b = self.ic_has_made_threat
+        self.cash_a = config.data["ic"]["cash"]
+        self.cash_b = config.data["ic"]["cash"]
+        self.income_a = config.data["ic"]["income"]
+        self.income_b = config.data["ic"]["income"]
+        self.military_a = config.data["ic"]["military"]
+        self.military_b = config.data["ic"]["military"]
+        self.has_made_threat_a = config.data["ic"]["has_made_threat"]
+        self.has_made_threat_b = config.data["ic"]["has_made_threat"]
+        self.has_nukes_a = config.data["ic"]["has_nukes"]
+        self.has_nukes_b = config.data["ic"]["has_nukes"]
 
     # Property decoratory
     # Observations for each agent
@@ -215,6 +251,17 @@ class MadAction_v0:
 
     action_size = 5
 
+    action_invest_economy = "Invest Economy"
+    action_invest_military = "Invest Military"
+    action_threaten = "Threaten"
+    action_attack = "Attack"
+    action_nuke = "Nuke"
+    action_strings = [action_invest_economy,
+                        action_invest_military,
+                        action_threaten,
+                        action_attack,
+                        action_nuke]
+
     def __init__(self, data):
         if not isinstance(data, np.ndarray):
             raise ValueError("Data must be of type numpy.ndarray")
@@ -249,13 +296,8 @@ class MadAction_v0:
 
     @property
     def action_str(self):
-        actions = ["Invest Economy",
-                   "Invest Military",
-                   "Threaten",
-                   "Attack",
-                   "Nuke"]
 
-        return actions[np.where(self.data == 1)[0][0]]
+        return self.action_strings[np.where(self.data == 1)[0][0]]
 
     def __repr__(self):
         repr_str = ''
@@ -283,6 +325,7 @@ class MadEnv_v0(gym.Env):
     agent_b = 'Agent B'
 
     def __init__(self):
+        self.config = MadGameConfig_v0()
         self.reset()
 
     def step(self, A):
@@ -322,6 +365,7 @@ class MadEnv_v0(gym.Env):
         return observation, reward, done, info
 
     def game_dynamics(self, playing_agent_state, waiting_agent_state, action):
+        #TODO move these numbers into a config file
         return playing_agent_state, waiting_agent_state
 
     def get_reward(self):
@@ -338,7 +382,7 @@ class MadEnv_v0(gym.Env):
 
     def reset(self):
         self.current_player = self.agent_a
-        self.S = MadState_v0()
+        self.S = MadState_v0(self.config)
         observation = dict()
         observation[self.agent_a] = self.S.observation_a
         observation[self.agent_b] = self.S.observation_b
