@@ -424,6 +424,7 @@ class MadEnv_v0(gym.Env):
         if action_dict["player"]["has_made_threat_clear"]:
             self.S.has_made_threat_a = 0
 
+        # Update enemy resources
         self.S.cash_b = max(
             0,
             self.S.cash_b +
@@ -437,19 +438,27 @@ class MadEnv_v0(gym.Env):
             self.S.military_b +
             action_dict["enemy"]["military_delta"])
 
+        # set or clear has nukes
+        self.has_nukes_a = self.S.military_a >= self.config.data[
+                MadAction_v0.action_strings[MadAction_v0.idx_nuke]]["player"]["military_threshold"]
+
+        self.has_nukes_b = self.S.military_b >= self.config.data[
+                MadAction_v0.action_strings[MadAction_v0.idx_nuke]]["player"]["military_threshold"]
+
+
         reward = action_dict["reward"]
 
         # If player has no money, no income, and not enough military to attack
         # then they have lost
         if self.S.cash_a == 0 and self.S.income_a == 0 and self.S.military_a < self.config.data[
-                MadAction_v0.action[MadAction_v0.idx_attack]]["player"]["cash_threshold"]:
+                MadAction_v0.action_strings[MadAction_v0.idx_attack]]["player"]["cash_threshold"]:
             done = True
             winner = self.agent_b
             reward += self.config.data["win_reward"]
             return reward, done, winner
 
         if self.S.cash_b == 0 and self.S.income_b == 0 and self.S.military_b < self.config.data[
-                MadAction_v0.action[MadAction_v0.idx_attack]]["player"]["cash_threshold"]:
+                MadAction_v0.action_strings[MadAction_v0.idx_attack]]["player"]["cash_threshold"]:
             done = True
             winner = self.agent_a
             reward += self.config.data["win_reward"]
