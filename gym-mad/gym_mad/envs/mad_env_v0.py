@@ -40,8 +40,12 @@ class MadState_v0:
     idx_has_nukes_b = 9
 
     def __init__(self):
-        self.data = np.zeros((10),dtype='int')
+        self.data = np.zeros((10), dtype='int')
 
+    # Property decorators
+
+    # Player A
+    # Cash A
     @property
     def cash_a(self):
         return self.data[self.idx_cash_a].astype(int)
@@ -50,9 +54,91 @@ class MadState_v0:
     def cash_a(self, x):
         self.data[self.idx_cash_a] = x
 
+    # Income A
+    @property
+    def income_a(self):
+        return self.data[self.idx_income_a].astype(int)
+
+    @income_a.setter
+    def income_a(self, x):
+        self.data[self.idx_income_a] = x
+
+    # Military A
+    @property
+    def military_a(self):
+        return self.data[self.idx_military_a].astype(int)
+
+    @military_a.setter
+    def military_a(self, x):
+        self.data[self.idx_military_a] = x
+
+    # Has Made Threat A
+    @property
+    def has_made_threat_a(self):
+        return self.data[self.idx_has_made_threat_a].astype(int)
+
+    @has_made_threat_a.setter
+    def has_made_threat_a(self, x):
+        self.data[self.idx_has_made_threat_a] = x
+
+    # Has Nukes A
+    @property
+    def has_nukes_a(self):
+        return self.data[self.idx_has_nukes_a].astype(int)
+
+    @has_nukes_a.setter
+    def has_nukes_a(self, x):
+        self.data[self.idx_has_nukes_a] = x
+
+    # Player B
+    # Cash B
+    @property
+    def cash_b(self):
+        return self.data[self.idx_cash_b].astype(int)
+
+    @cash_b.setter
+    def cash_b(self, x):
+        self.data[self.idx_cash_b] = x
+
+    # Income B
+    @property
+    def income_b(self):
+        return self.data[self.idx_income_b].astype(int)
+
+    @income_b.setter
+    def income_b(self, x):
+        self.data[self.idx_income_b] = x
+
+    # Military B
+    @property
+    def military_b(self):
+        return self.data[self.idx_military_b].astype(int)
+
+    @military_b.setter
+    def military_b(self, x):
+        self.data[self.idx_military_b] = x
+
+    # Has Made Threat B
+    @property
+    def has_made_threat_b(self):
+        return self.data[self.idx_has_made_threat_b].astype(int)
+
+    @has_made_threat_b.setter
+    def has_made_threat_b(self, x):
+        self.data[self.idx_has_made_threat_b] = x
+
+    # Has Nukes B
+    @property
+    def has_nukes_b(self):
+        return self.data[self.idx_has_nukes_b].astype(int)
+
+    @has_nukes_b.setter
+    def has_nukes_b(self, x):
+        self.data[self.idx_has_nukes_b] = x
+
     def __repr__(self):
         repr_str = ''
-        exclude_list = ['__','ic','idx','data']
+        exclude_list = ['__', 'ic', 'idx', 'data']
         for attr in dir(self):
             is_excluded = False
             for e in exclude_list:
@@ -63,13 +149,7 @@ class MadState_v0:
             if is_excluded:
                 continue
 
-            print(attr)
-            print(type(attr))
             attr_value = getattr(self, attr)
-            print(attr_value)
-            print(type(attr_value))
-            print(repr_str)
-            print(type(repr_str))
             repr_str += "MadState_v0.{:20} = {:>5}\n".format(
                 attr, attr_value)
 
