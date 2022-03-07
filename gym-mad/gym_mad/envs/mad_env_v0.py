@@ -6,6 +6,8 @@ import numpy as np
 
 class MadState_v0:
     '''
+    Game State
+
     - Player A's
         - cash [int]
         - passive_income [int]
@@ -25,6 +27,7 @@ class MadState_v0:
     ic_income = 10
     ic_military = 10
     ic_has_made_threat = 0
+    ic_has_nukes = 0
 
     # Data indexes
     idx_cash_a = 0
@@ -41,6 +44,16 @@ class MadState_v0:
 
     def __init__(self):
         self.data = np.zeros((10), dtype='int')
+
+        # Setup initial conditions
+        self.cash_a = self.ic_cash
+        self.cash_b = self.ic_cash
+        self.income_a = self.ic_income
+        self.income_b = self.ic_income
+        self.military_a = self.ic_military
+        self.military_b = self.ic_military
+        self.has_made_threat_a = self.ic_has_made_threat
+        self.has_made_threat_b = self.ic_has_made_threat
 
     # Property decorators
 
@@ -160,13 +173,13 @@ class MadEnv_v0(gym.Env):
     metadata = {'render.modes': ['human']}
 
     def __init__(self):
-        self.state = MadState_v0()
+        self.S = MadState_v0()
 
-    def step(self, action):
+    def step(self, A):
         pass
 
     def reset(self):
         pass
 
     def render(self, mode='human', close=False):
-        print(self.state)
+        print(self.S)
