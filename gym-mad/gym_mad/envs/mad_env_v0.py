@@ -2,6 +2,7 @@ import gym
 from gym import error, spaces, utils
 from gym.utils import seeding
 import numpy as np
+import copy
 import json
 import os
 
@@ -15,6 +16,12 @@ class MadGameConfig_v0:
         '''
         This function automatically finds path to config folder
         '''
+        if filename is not None:
+            self.data = self.load_from_json(filename)
+        else:
+            self.set_base_attributes()
+
+    def set_base_attributes(self):
         self.data = dict()
         for action in MadAction_v0.action_strings:
             self.data[action] = dict()
@@ -38,10 +45,10 @@ class MadGameConfig_v0:
             self.data[action]["reward"] = 0
 
         self.data["ic"] = dict()
-        self.data["ic"]["cash"] = 10
-        self.data["ic"]["income"] = 10
-        self.data["ic"]["military"] = 10
-        self.data["ic"]["has_made_threat"] = 10
+        self.data["ic"]["cash"] = 0
+        self.data["ic"]["income"] = 0
+        self.data["ic"]["military"] = 0
+        self.data["ic"]["has_made_threat"] = 0
         self.data["ic"]["has_nukes"] = 0
 
         self.data["win_reward"] = 0
@@ -61,7 +68,8 @@ class MadGameConfig_v0:
         path = os.path.join(self.get_path_config_folder(),filename)
         with open(path, 'r') as f:
             data = json.load(f)
-            print(data)
+
+        return data
 
 
 class MadState_v0:
@@ -125,7 +133,7 @@ class MadState_v0:
         '''
         Swaps the state of the agents
         '''
-        tmp = self.data[0:5]
+        tmp = copy.deepcopy(self.data[0:5])
         self.data[0:5] = self.data[5:10]
         self.data[5:10] = tmp
 
@@ -352,8 +360,8 @@ class MadEnv_v0(gym.Env):
     agent_a = 'Agent A'
     agent_b = 'Agent B'
 
-    def __init__(self, config_filename=None):
-        self.config = MadGameConfig_v0(config_filename)
+    def __init__(self):
+        self.config = MadGameConfig_v0()
         self.reset()
 
     def step(self, A):
@@ -361,12 +369,12 @@ class MadEnv_v0(gym.Env):
 
         # Seperate player states
         if self.current_player == self.agent_a:
-            reward, done, winner = self.game_dynamics(A)
+            reward, done, winner, info = self.game_dynamics(A)
         else:
             self.S.swap_agents()  # Game dynamics assumes playing agent is A
             # Since be is playing, swap agents so that b is a and a is b
             # then swap back
-            reward, done, winner = self.game_dynamics(A)
+            reward, done, winner, info = self.game_dynamics(A)
             self.S.swap_agents()
 
         observation = dict()
@@ -375,7 +383,6 @@ class MadEnv_v0(gym.Env):
 
         self.change_playing_agent()
 
-        info = dict()
         info['action'] = A
         info['winner'] = winner
 
@@ -385,6 +392,8 @@ class MadEnv_v0(gym.Env):
         '''
         Assumes the playing agent is agent_a
         and the waiting agent is agent_b
+
+        Change the game config using the reset fn
 
         Return rewards, done, winner
         Updates state in place
@@ -396,69 +405,92 @@ class MadEnv_v0(gym.Env):
         reward = 0
         done = False
         winner = False
+        info = dict()
+        info["turn_desc"] = ''
+
+
 
         # Check to see if player has resources to execute action
         has_enough_cash = self.S.cash_a >= action_dict["player"][
             "cash_threshold"]
         if not has_enough_cash:
             reward += action_dict["penalty"]["insufficient_cash"]
-            return reward, done, winner
+            info["turn_desc"] += f"Insufficient Cash. Reward = {reward}\n"
 
-        has_enough_military = self.S.cash_a >= action_dict["player"][
+        has_enough_military = self.S.military_a >= action_dict["player"][
             "military_threshold"]
         if not has_enough_military:
             reward += action_dict["penalty"]["insufficient_military"]
-            return reward, done, winner
+            info["turn_desc"] += f"Insufficient Military. Reward = {reward}\n"
 
-        if action_dict["player"]["requires_threat"] and not self.S.has_made_threat_a:
+        has_sufficient_threat = not action_dict["player"]["requires_threat"] or self.S.has_made_threat_a
+        if not has_sufficient_threat:
             reward += action_dict["penalty"]["insufficient_threat"]
-            return reward, done, winner
+            info["turn_desc"] += f"Insufficient Threat. Reward = {reward}\n"
 
-        # Player has enough resources for the action, execute the action
-        # Update player resources
-        self.S.cash_a = max(
-            0,
-            self.S.cash_a +
-            action_dict["player"]["cash_delta"])
-        self.S.income_a = max(
-            0,
-            self.S.income_a +
-            action_dict["player"]["income_delta"])
-        self.S.military_a = max(
-            0,
-            self.S.military_a +
-            action_dict["player"]["military_delta"])
+        if has_enough_cash and has_enough_military and has_sufficient_threat:
+            # Player has enough resources for the action, execute the action
+            # Update player resources
+            self.S.cash_a = max(
+                0,
+                self.S.cash_a +
+                action_dict["player"]["cash_delta"])
+            self.S.income_a = max(
+                0,
+                self.S.income_a +
+                action_dict["player"]["income_delta"])
+            self.S.military_a = max(
+                0,
+                self.S.military_a +
+                action_dict["player"]["military_delta"])
 
-        # Set or clear threat
-        if action_dict["player"]["has_made_threat_set"]:
-            self.S.has_made_threat_a = 1
+            # Set or clear threat
+            if action_dict["player"]["has_made_threat_set"]:
+                self.S.has_made_threat_a = 1
+                info["turn_desc"] += f"Threat has been set\n"
 
-        if action_dict["player"]["has_made_threat_clear"]:
-            self.S.has_made_threat_a = 0
+            if action_dict["player"]["has_made_threat_clear"]:
+                self.S.has_made_threat_a = 0
+                info["turn_desc"] += f"Threat has been cleared\n"
 
-        # Update enemy resources
-        self.S.cash_b = max(
-            0,
-            self.S.cash_b +
-            action_dict["enemy"]["cash_delta"])
-        self.S.income_b = max(
-            0,
-            self.S.income_b +
-            action_dict["enemy"]["income_delta"])
-        self.S.military_b = max(
-            0,
-            self.S.military_b +
-            action_dict["enemy"]["military_delta"])
+            # Update enemy resources
+            self.S.cash_b = max(
+                0,
+                self.S.cash_b +
+                action_dict["enemy"]["cash_delta"])
+            self.S.income_b = max(
+                0,
+                self.S.income_b +
+                action_dict["enemy"]["income_delta"])
+            self.S.military_b = max(
+                0,
+                self.S.military_b +
+                action_dict["enemy"]["military_delta"])
 
-        # set or clear has nukes
-        self.has_nukes_a = self.S.military_a >= self.config.data[
-                MadAction_v0.action_strings[MadAction_v0.idx_nuke]]["player"]["military_threshold"]
+            # set or clear has nukes
+            self.S.has_nukes_a = self.S.military_a >= self.config.data[
+                    MadAction_v0.action_nuke]["player"]["military_threshold"] and \
+                                 self.S.cash_a >= self.config.data[
+                    MadAction_v0.action_nuke]["player"]["cash_threshold"] and \
+                                 (not self.config.data[MadAction_v0.action_nuke]["player"]["requires_threat"] or \
+                                  self.S.has_made_threat_a)
 
-        self.has_nukes_b = self.S.military_b >= self.config.data[
-                MadAction_v0.action_strings[MadAction_v0.idx_nuke]]["player"]["military_threshold"]
+            self.S.has_nukes_b = self.S.military_b >= self.config.data[
+                    MadAction_v0.action_nuke]["player"]["military_threshold"] and \
+                                 self.S.cash_b >= self.config.data[
+                    MadAction_v0.action_nuke]["player"]["cash_threshold"] and \
+                                 (not self.config.data[MadAction_v0.action_nuke]["player"]["requires_threat"] or \
+                                  self.S.has_made_threat_b)
 
 
-        reward = action_dict["reward"]
+
+            reward += action_dict["reward"]
+            info["turn_desc"] += f"Action reward is {action_dict['reward']}. New reward is {reward}\n"
+
+        # Give player passive income
+        old_cash = self.S.cash_a
+        self.S.cash_a = max(0, self.S.cash_a + self.S.income_a)
+        info["turn_desc"] += f"Passive income: {old_cash} + {self.S.income_a} -> {self.S.cash_a}\n"
 
         # If player has no money, no income, and not enough military to attack
         # then they have lost
@@ -467,16 +499,16 @@ class MadEnv_v0(gym.Env):
             done = True
             winner = self.agent_b
             reward += self.config.data["win_reward"]
-            return reward, done, winner
+            return reward, done, winner, info
 
         if self.S.cash_b == 0 and self.S.income_b == 0 and self.S.military_b < self.config.data[
                 MadAction_v0.action_strings[MadAction_v0.idx_attack]]["player"]["cash_threshold"]:
             done = True
             winner = self.agent_a
             reward += self.config.data["win_reward"]
-            return reward, done, winner
+            return reward, done, winner, info
 
-        return reward, done, winner
+        return reward, done, winner, info
 
     def change_playing_agent(self):
         if self.current_player == self.agent_a:
@@ -484,8 +516,9 @@ class MadEnv_v0(gym.Env):
         else:
             self.current_player = self.agent_a
 
-    def reset(self):
+    def reset(self, filename=None):
         self.current_player = self.agent_a
+        self.config = MadGameConfig_v0(filename)
         self.S = MadState_v0(self.config)
         observation = dict()
         observation[self.agent_a] = self.S.observation_a
