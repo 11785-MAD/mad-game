@@ -361,7 +361,11 @@ class MadEnv_v0(gym.Env):
     agent_b = 'Agent B'
 
     def __init__(self):
-        self.config = MadGameConfig_v0()
+        self.config_path = None
+        self.reset()
+
+    def set_config_path(self, path):
+        self.config_path = path
         self.reset()
 
     def step(self, A):
@@ -516,9 +520,9 @@ class MadEnv_v0(gym.Env):
         else:
             self.current_player = self.agent_a
 
-    def reset(self, filename=None):
+    def reset(self):
         self.current_player = self.agent_a
-        self.config = MadGameConfig_v0(filename)
+        self.config = MadGameConfig_v0(self.config_path)
         self.S = MadState_v0(self.config)
         observation = dict()
         observation[self.agent_a] = self.S.observation_a
