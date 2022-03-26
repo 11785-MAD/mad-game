@@ -361,6 +361,7 @@ class MadEnv_v0(gym.Env):
     agent_b = 'Agent B'
 
     def __init__(self):
+        self.turn_count = 0
         self.config_path = None
         self.reset()
 
@@ -379,6 +380,8 @@ class MadEnv_v0(gym.Env):
             # Since be is playing, swap agents so that b is a and a is b
             # then swap back
             reward, done, winner, info = self.game_dynamics(A)
+            # TODO: Winner is always agent a because it is
+            # determined in game dynamics. Fix this.
             self.S.swap_agents()
 
         observation = dict()
@@ -387,6 +390,8 @@ class MadEnv_v0(gym.Env):
 
         self.change_playing_agent()
 
+        self.turn_count += 1
+        info['turn_count'] = self.turn_count
         info['action'] = A
         info['winner'] = winner
 
@@ -521,6 +526,7 @@ class MadEnv_v0(gym.Env):
             self.current_player = self.agent_a
 
     def reset(self):
+        self.turn_count = 0
         self.current_player = self.agent_a
         self.config = MadGameConfig_v0(self.config_path)
         self.S = MadState_v0(self.config)
