@@ -1,3 +1,3 @@
 # TODO
 - explain how the game works
-- have a seperate description for each version of the game
+- have a separate description for each version of the game

@@ -372,17 +372,24 @@ class MadEnv_v0(gym.Env):
     def step(self, A):
         A = MadAction_v0(A)
 
-        # Seperate player states
+        # Separate player states
         if self.current_player == self.agent_a:
             reward, done, winner, info = self.game_dynamics(A)
         else:
             self.S.swap_agents()  # Game dynamics assumes playing agent is A
-            # Since be is playing, swap agents so that b is a and a is b
+            # Since B is playing, swap agents so that B is A and A is B
             # then swap back
             reward, done, winner, info = self.game_dynamics(A)
+            self.S.swap_agents()
+
             # TODO: Winner is always agent a because it is
             # determined in game dynamics. Fix this.
-            self.S.swap_agents()
+
+            # temp solution to fix Agent A always winning
+            if (winner == self.agent_a):
+                winner = self.agent_b
+            elif (winner == self.agent_b):
+                winner = self.agent_a
 
         observation = dict()
         observation[self.agent_a] = self.S.observation_a
