@@ -546,6 +546,12 @@ class MadEnv_v0(gym.Env):
     def render(self, mode='human', close=False):
         print(self.S)
 
+    def check_both_nukes(self):
+        """
+        Check if nukes have been acquired by BOTH agents.
+        """
+        return self.S.has_nukes_a and self.S.has_nukes_b
+
     @property
     def observation_size(self):
         return MadState_v0.observation_size
