@@ -296,10 +296,10 @@ class MadAction_v0:
         if not isinstance(data, np.ndarray):
             raise ValueError("Data must be of type numpy.ndarray")
 
-        if not data.shape == (5,):
+        if not data.shape == (MadAction_v0.action_size,):
             raise ValueError("Data must be of shape (5,)")
 
-        if not (np.sum(data == 0) == 4 and np.sum(data == 1) == 1):
+        if not (np.sum(data == 0) == MadAction_v0.action_size-1 and np.sum(data == 1) == 1):
             raise ValueError("Data must be one hot")
 
         self.data = data
@@ -384,7 +384,6 @@ class MadEnv_v0(gym.Env):
 
             # TODO: Winner is always agent a because it is
             # determined in game dynamics. Fix this.
-
             # temp solution to fix Agent A always winning
             if (winner == self.agent_a):
                 winner = self.agent_b
@@ -401,6 +400,7 @@ class MadEnv_v0(gym.Env):
         info['turn_count'] = self.turn_count
         info['action'] = A
         info['winner'] = winner
+        info['player'] = self.current_player
 
         return observation, reward, done, info
 
