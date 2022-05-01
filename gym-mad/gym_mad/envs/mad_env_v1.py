@@ -380,10 +380,17 @@ class MadAction_v1:
             info["turn_desc"] = 'Player tried to invest in economy but had insufficient cash.'
             reward = C.data["invalid_penalty"]
             return reward, info
-        elif (S.cash_a > C.data["max_cash"] or S.income_a > C.data["max_income"]):
-            info["turn_desc"] = 'Player tried to invest in economy but had over max cash/income.'
+        elif (S.cash_a > C.data["max_cash"]):
+            info["turn_desc"] = 'Player tried to invest in economy but had over max cash.'
+            S.cash_a = C.data["max_cash"]
             reward = C.data["over_max_penalty"]
             return reward, info
+        elif (S.income_a > C.data["max_income"]):
+            info["turn_desc"] = 'Player tried to invest in economy but had over max income.'
+            S.income_a = C.data["max_income"]
+            reward = C.data["over_max_penalty"]
+            return reward, info
+
 
         reward = max(1, action_dict["log_coefficient"] * np.log(S.cash_a) + action_dict["reward_offset"])
 
@@ -405,6 +412,7 @@ class MadAction_v1:
             return reward, info
         elif (S.military_a > C.data["max_military"]):
             info["turn_desc"] = 'Player tried to invest in military but had over max military.'
+            S.military_a = C.data["max_military"]
             reward = C.data["over_max_penalty"]
             return reward, info
 
