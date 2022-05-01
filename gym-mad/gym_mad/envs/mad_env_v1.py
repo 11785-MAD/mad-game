@@ -41,7 +41,7 @@ class MadGameConfig_v1:
         for field in action_invest_eco_fields:
             self.data[action_invest_eco][field] = 0
 
-        action_invest_mil_fields = ["cash_delta", "military_delta", "log_coefficient","log_epsilon", "military_cash_scale_factor"]
+        action_invest_mil_fields = ["cash_delta", "military_delta", "log_coefficient","log_epsilon", "military_cash_scale_factor", "military_size_limit"]
         for field in action_invest_mil_fields:
             self.data[action_invest_mil][field] = 0
 
@@ -66,10 +66,15 @@ class MadGameConfig_v1:
         self.data["ic"]["has_made_threat"] = 0
         self.data["ic"]["has_nukes"] = 0
 
+        # set general params
         self.data["win_reward"] = 1000
         self.data["max_episode_length"] = 1000
         self.data["money_loss_threshold"] = 10
-        self.data["invalid_penalty"] = 100
+        self.data["invalid_penalty"] = -100
+        self.data["over_max_penalty"] = -300
+        self.data["max_cash"] = 100000
+        self.data["max_income"] = 1000
+        self.data["max_military"] = 3000
 
     def get_path_config_folder(self):
         parent_dir = os.path.dirname(os.path.abspath(__file__))
@@ -375,6 +380,10 @@ class MadAction_v1:
             info["turn_desc"] = 'Player tried to invest in economy but had insufficient cash.'
             reward = C.data["invalid_penalty"]
             return reward, info
+        elif (S.cash_a > C.data["max_cash"] or S.income_a > C.data["max_income"]):
+            info["turn_desc"] = 'Player tried to invest in economy but had over max cash/income.'
+            reward = C.data["over_max_penalty"]
+            return reward, info
 
         reward = max(1, action_dict["log_coefficient"] * np.log(S.cash_a) + action_dict["reward_offset"])
 
@@ -384,7 +393,7 @@ class MadAction_v1:
         return reward, info
 
     def action_invest_military_dynamics(self, S:MadState_v1, C:MadGameConfig_v1):
-        # action_invest_mil_fields = ["cash_delta", "military_delta", "log_coefficient", "military_cash_scale_factor"]
+        # action_invest_mil_fields = ["cash_delta", "military_delta", "log_coefficient", "military_cash_scale_factor", "military_size_limit"]
         reward = 0
         info = dict()
         info["turn_desc"] = ''
@@ -393,6 +402,10 @@ class MadAction_v1:
         if S.cash_a < action_dict["cash_threshold"]:
             info["turn_desc"] = 'Player tried to invest in military but failed.'
             reward = C.data["invalid_penalty"]
+            return reward, info
+        elif (S.military_a > C.data["max_military"]):
+            info["turn_desc"] = 'Player tried to invest in military but had over max military.'
+            reward = C.data["over_max_penalty"]
             return reward, info
 
         ratio = S.cash_a / (S.military_a * action_dict["military_cash_scale_factor"] + action_dict["log_epsilon"])

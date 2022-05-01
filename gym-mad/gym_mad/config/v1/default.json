@@ -51,5 +51,9 @@
     "win_reward": 1000,
     "max_episode_length": 1000,
     "money_loss_threshold": 10,
-    "invalid_penalty": -100
+    "invalid_penalty": -100,
+    "over_max_penalty": -300,
+    "max_cash": 100000,
+    "max_income": 1000,
+    "max_military": 3000
 }
