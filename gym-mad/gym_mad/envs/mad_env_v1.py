@@ -76,6 +76,7 @@ class MadGameConfig_v1:
         self.data["max_cash"] = 100000
         self.data["max_income"] = 1000
         self.data["max_military"] = 3000
+        self.data["reward_scale"] = 0.001
 
     def get_path_config_folder(self):
         parent_dir = os.path.dirname(os.path.abspath(__file__))
@@ -467,10 +468,14 @@ class MadAction_v1:
         S.military_b -= action_dict["L_military"] * r_b
         
         if S.military_a < 0:
+            unpaid_loss = -S.military_a
             S.military_a = 0
+            S.cash_a -= unpaid_loss * action_dict["military_cash_scale_factor"]
 
         if S.military_b < 0:
+            unpaid_loss = -S.military_b
             S.military_b = 0
+            S.cash_b -= unpaid_loss * action_dict["military_cash_scale_factor"]
             
         info["turn_desc"] = 'Player attacked.'
         return reward, info
@@ -574,6 +579,8 @@ class MadAction_v1:
             done = True
             winner = MadEnv_v1.agent_a
             reward += C.data["win_reward"]
+
+        reward = reward * C.data["reward_scale"]
         return reward, done, winner, info
                     
     @property

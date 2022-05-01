@@ -29,6 +29,7 @@
         "log_coefficient": 20,
         "log_epsilon": 1,
         "military_threshold": 100,
+        "military_cash_scale_factor": 5,
         "log_offset": -0.5
     },
     "Nuke": {
@@ -56,5 +57,6 @@
     "over_max_penalty": -100,
     "max_cash": 10000,
     "max_income": 100,
-    "max_military": 1000
+    "max_military": 1000,
+    "reward_scale": 0.001
 }
