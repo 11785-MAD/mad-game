@@ -20,7 +20,7 @@
             "insufficient_military": 0,
             "insufficient_threat": 0
         },
-        "reward": 1000
+        "reward": 0
     },
     "Invest Military": {
         "player": {
@@ -89,7 +89,7 @@
             "insufficient_military": 0,
             "insufficient_threat": -10
         },
-        "reward": 0
+        "reward": 1000
     },
     "Nuke": {
         "player": {
@@ -121,5 +121,6 @@
         "has_made_threat": 0,
         "has_nukes": 0
     },
-    "win_reward": 1000
+    "win_reward": 1000,
+    "max_episodes": 1000
 }

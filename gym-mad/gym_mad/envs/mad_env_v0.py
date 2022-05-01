@@ -349,6 +349,13 @@ class MadAction_v0:
                 attr, attr_value)
 
         return repr_str
+    
+    def max_str_len(self):
+        max_len = int(0)
+        for string in self.action_strings:
+            max_len = max(len(string), max_len)
+        return max_len
+            
 
 
 class MadEnv_v0(gym.Env):
@@ -379,8 +386,10 @@ class MadEnv_v0(gym.Env):
 
         # Separate player states
         if self.current_player == self.agent_a:
+            self.A_action = A
             reward, done, winner, info = self.game_dynamics(A)
         else:
+            self.B_action = A
             self.S.swap_agents()  # Game dynamics assumes playing agent is A
             # Since B is playing, swap agents so that B is A and A is B
             # then swap back
@@ -402,7 +411,9 @@ class MadEnv_v0(gym.Env):
 
         self.turn_count += 1
         if self.bar is not None:
-            self.bar.set_postfix(ac=A.action_str,winner=winner)
+            L = A.max_str_len()
+            postfix = f"A_ac={self.A_action.action_str:>{L}}, B_ac={self.B_action.action_str:>{L}}, winner={winner}"
+            self.bar.set_postfix_str(postfix)
             self.bar.update()
         if self.turn_count >= self.config.data["max_episodes"]:
             done = True
