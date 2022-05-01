@@ -29,23 +29,6 @@ class MadGameConfig_v1:
         for action in MadAction_v1.action_strings:
             self.data[action] = dict()
             self.data[action]["cash_threshold"] = 0
-        #    self.data[action]["enemy"] = dict()
-        #    self.data[action]["penalty"] = dict()
-        #    self.data[action]["player"]["cash_threshold"] = 0
-        #    self.data[action]["player"]["military_threshold"] = 0
-            # self.data[action]["player"]["requires_threat"] = 0
-        #     self.data[action]["player"]["cash_delta"] = 0
-        #     self.data[action]["player"]["income_delta"] = 0
-        #     self.data[action]["player"]["military_delta"] = 0
-        #     self.data[action]["player"]["has_made_threat_set"] = 0
-        #     self.data[action]["player"]["has_made_threat_clear"] = 0
-        #     self.data[action]["enemy"]["cash_delta"] = 0
-        #     self.data[action]["enemy"]["income_delta"] = 0
-        #     self.data[action]["enemy"]["military_delta"] = 0
-        #     self.data[action]["penalty"]["insufficient_cash"] = 0
-        #     self.data[action]["penalty"]["insufficient_military"] = 0
-        #     self.data[action]["penalty"]["insufficient_threat"] = 0
-        #     self.data[action]["reward"] = 0
 
         action_invest_eco = MadAction_v1.action_invest_economy
         action_invest_mil = MadAction_v1.action_invest_military
@@ -341,48 +324,104 @@ class MadAction_v1:
     def action_invest_economy_dynamics(self, S:MadState_v1, C:MadGameConfig_v1):
         # action_invest_eco_fields = ["income_delta", "cash_delta", "log_coefficient", "reward_offset", "min_reward"]
         reward = 0#max(1, C.data[]["log_coefficient"] * np.log(S))
-        done = False
-        winner = False
         info = dict()
         info["turn_desc"] = ''
         action_dict = C.data[MadAction_v1.action_invest_economy]
-        return reward, done, winner, info
+
+        if S.cash_a < action_dict["cash_threshold"]:
+            reward = C.data["invalid_penalty"]
+            return reward, info
+
+        reward = max(1, action_dict["log_coefficient"] * np.log(S.cash_a) + action_dict["reward_offset"])
+
+        S.cash_a += action_dict["cash_delta"]
+        S.income_a += action_dict["income_delta"]
+        return reward, info
 
     def action_invest_military_dynamics(self, S:MadState_v1, C:MadGameConfig_v1):
+        # action_invest_mil_fields = ["cash_delta", "military_delta", "log_coefficient", "military_cash_scale_factor"]
         reward = 0
-        done = False
-        winner = False
         info = dict()
         info["turn_desc"] = ''
         action_dict = C.data[MadAction_v1.action_invest_military]
-        return reward, done, winner, info
 
-    def action_threaten_dynamics(self, S:MadState_v1, C:MadGameConfig_v1):
-        reward = 0
-        done = False
-        winner = False
-        info = dict()
-        info["turn_desc"] = ''
-        action_dict = C.data[MadAction_v1.action_threaten]
-        return reward, done, winner, info
+        if S.cash_a < action_dict["cash_threshold"]:
+            reward = C.data["invalid_penalty"]
+            return reward, info
+
+        ratio = S.cash_a / (S.military_a * action_dict["military_cash_scale_factor"])
+        if (ratio > 1):
+            reward = action_dict["log_coefficient"] * np.log2(ratio)
+        else:
+            reward = 0
+
+        S.cash_a += action_dict["cash_delta"]
+        S.income_a += action_dict["income_delta"]
+        return reward, info
 
     def action_attack_dynamics(self, S:MadState_v1, C:MadGameConfig_v1):
+        # action_atk_fields = ["L_cash", "L_miltary", "log_coefficient", "log_epsilon", "military_threshold"]
         reward = 0
-        done = False
-        winner = False
         info = dict()
         info["turn_desc"] = ''
         action_dict = C.data[MadAction_v1.action_attack]
-        return reward, done, winner, info
+
+        if S.cash_a < action_dict["cash_threshold"] or S.military_a < action_dict["military_threshold"]:
+            reward = C.data["invalid_penalty"]
+            return reward, info
+
+        reward = action_dict["log_coefficient"] * np.log2((S.military_a + 1) / (S.military_b + 1))
+
+        r_a = S.military_b / (S.military_a + S.military_b)
+        r_b = S.military_a / (S.military_a + S.military_b)
+        # note: assumes L_cash, L_military are POSITIVE
+        S.cash_a -= action_dict["L_cash"] * r_a
+        S.military_a -= action_dict["L_military"] * r_a
+        S.cash_b -= action_dict["L_cash"] * r_b
+        S.military_b -= action_dict["L_military"] * r_b
+        
+        return reward, info
+
+    def action_threaten_dynamics(self, S:MadState_v1, C:MadGameConfig_v1):
+        # action_threaten_fields = ["reward", "military_threshold"]
+        reward = 0
+        info = dict()
+        info["turn_desc"] = ''
+        action_dict = C.data[MadAction_v1.action_threaten]
+
+        if S.cash_a < action_dict["cash_threshold"] or S.military_a < action_dict["military_threshold"] or not S.has_made_threat_a:
+            reward = C.data["invalid_penalty"]
+            return reward, info
+
+        reward = action_dict["reward"]
+        S.has_made_threat_a = True
+        return reward, info
 
     def action_nuke_dynamics(self, S:MadState_v1, C:MadGameConfig_v1):
+        # action_nuke_fields = ["enemy_cash_delta", "enemy_mil_delta","self_cash_delta_nuke_cost","self_cash_delta_second_strike",
+                            #   "self_military_delta_second_strike","reward_enemy_no_nuke","reward_enemy_has_nuke", "military_threshold"]
         reward = 0
-        done = False
-        winner = False
         info = dict()
         info["turn_desc"] = ''
         action_dict = C.data[MadAction_v1.action_nuke]
-        return reward, done, winner, info
+
+        if S.cash_a < action_dict["cash_threshold"] or S.military_a < action_dict["military_threshold"] or not S.has_made_threat_a:
+            reward = C.data["invalid_penalty"]
+            return reward, info
+
+        if S.has_made_threat_b: # TODO change condition to enemy has NUKES (force agent to learn threat-nuke connection)
+            reward = action_dict["reward_enemy_has_nuke"]
+        else:
+            reward = action_dict["reward_enemy_no_nuke"]
+
+        S.cash_a += action_dict["self_cash_delta_nuke_cost"]
+        S.cash_b += action_dict["enemy_cash_delta"]
+        S.military_b += action_dict["enemy_mil_delta"]
+        if (S.has_nukes_b):
+            S.cash_a += action_dict["self.cash_delta_second_strike"]
+            S.military_a += action_dict["self_military_delta_second_strike"]
+
+        return reward, info
 
     def get_dynamics_fn(self):
         dynamics = [self.action_invest_economy_dynamics,
@@ -393,7 +432,10 @@ class MadAction_v1:
         return dynamics[self.action_idx]
 
     def apply_dynamics(self, S:MadState_v1, C:MadGameConfig_v1):
-        self.get_dynamics_fn()(S,C)
+        done = False
+        winner = None
+        reward, info = self.get_dynamics_fn()(S,C)
+        return reward, done, winner, info
                     
     @property
     def action_idx(self):
@@ -428,7 +470,6 @@ class MadAction_v1:
             max_len = max(len(string), max_len)
         return max_len
             
-
 
 class MadEnv_v1(gym.Env):
     '''
@@ -483,7 +524,7 @@ class MadEnv_v1(gym.Env):
 
         self.turn_count += 1
         if self.bar is not None:
-            L = A.max_str_len()
+            L = A.max_str_len()+1
             postfix = f"A_ac={self.A_action.action_str:>{L}}, B_ac={self.B_action.action_str:>{L}}, winner={winner}"
             self.bar.set_postfix_str(postfix)
             self.bar.update()
