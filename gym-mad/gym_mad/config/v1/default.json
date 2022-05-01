@@ -16,7 +16,7 @@
         "military_cash_scale_factor": 5
     },
     "Threaten": {
-        "cash_threshold": 2000,
+        "cash_threshold": 4000,
         "reward": 50,
         "military_threshold": 400
     },
@@ -26,7 +26,8 @@
         "L_military": 20,
         "log_coefficient": 20,
         "log_epsilon": 1,
-        "military_threshold": 100
+        "military_threshold": 100,
+        "log_offset": -0.5
     },
     "Nuke": {
         "cash_threshold": 4000,

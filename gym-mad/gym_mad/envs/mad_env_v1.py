@@ -129,7 +129,7 @@ class MadState_v1:
     idx_has_made_threat_b = 8
     idx_has_nukes_b = 9
 
-    observation_size = 6
+    observation_size = 10
 
     def __init__(self, config):
         self.data = np.zeros((10), dtype='float')
@@ -158,21 +158,27 @@ class MadState_v1:
     # Observations for each agent
     @property
     def observation_a(self):
+        return self.data
+        """
         return self.data[[self.idx_cash_a,
                           self.idx_income_a,
                           self.idx_military_a,
                           self.idx_has_made_threat_a,
                           self.idx_has_nukes_a,
                           self.idx_has_made_threat_b]]
+                          """
 
     @property
     def observation_b(self):
+        return self.data
+        """
         return self.data[[self.idx_cash_b,
                           self.idx_income_b,
                           self.idx_military_b,
                           self.idx_has_made_threat_b,
                           self.idx_has_nukes_b,
                           self.idx_has_made_threat_a]]
+                          """
 
     # Player A
     # Cash A
@@ -266,9 +272,24 @@ class MadState_v1:
     def has_nukes_b(self, x):
         self.data[self.idx_has_nukes_b] = x
 
+    @property
+    def str_short(self):
+        rv = ''
+        rv += '{:.0f} '.format(self.cash_a)
+        rv += '{:.0f} '.format(self.income_a)
+        rv += '{:.0f} '.format(self.military_a)
+        rv += '{:d} '.format(self.has_made_threat_a)
+        rv += '{:d} '.format(self.has_nukes_a)
+        rv += '{:.0f} '.format(self.cash_b)
+        rv += '{:.0f} '.format(self.income_b)
+        rv += '{:.0f} '.format(self.military_b)
+        rv += '{:d} '.format(self.has_made_threat_b)
+        rv += '{:d}'.format(self.has_nukes_b)
+        return rv
+
     def __repr__(self):
         repr_str = ''
-        exclude_list = ['__', 'ic', 'idx', 'data', 'observation', 'swap']
+        exclude_list = ['__', 'ic', 'idx', 'data', 'observation', 'swap', 'str_short']
         for attr in dir(self):
             is_excluded = False
             for e in exclude_list:
@@ -308,16 +329,28 @@ class MadAction_v1:
 
     action_size = 5
 
-    action_invest_economy = "Invest Economy"
-    action_invest_military = "Invest Military"
-    action_threaten = "Threaten"
-    action_attack = "Attack"
-    action_nuke = "Nuke"
+    action_invest_economy   = "Invest Economy"
+    action_invest_military  = "Invest Military"
+    action_threaten         = "Threaten"
+    action_attack           = "Attack"
+    action_nuke             = "Nuke"
     action_strings = [action_invest_economy,
                       action_invest_military,
                       action_threaten,
                       action_attack,
                       action_nuke]
+
+    action_invest_economy_short     = "Eco"
+    action_invest_military_short    = "Mil"
+    action_threaten_short           = "Thr"
+    action_attack_short             = "Atk"
+    action_nuke_short               = "Nuk"
+    action_strings_short = [action_invest_economy_short,
+                      action_invest_military_short,
+                      action_threaten_short,
+                      action_attack_short,
+                      action_nuke_short]
+
 
     def __init__(self, data):
         if not isinstance(data, np.ndarray):
@@ -362,7 +395,7 @@ class MadAction_v1:
             reward = C.data["invalid_penalty"]
             return reward, info
 
-        ratio = S.cash_a / ((S.military_a + action_dict["log_epsilon"]) * action_dict["military_cash_scale_factor"])
+        ratio = S.cash_a / (S.military_a * action_dict["military_cash_scale_factor"] + action_dict["log_epsilon"])
         if (ratio > 1):
             reward = action_dict["log_coefficient"] * np.log2(ratio)
         else:
@@ -385,7 +418,7 @@ class MadAction_v1:
             reward = C.data["invalid_penalty"]
             return reward, info
 
-        reward = action_dict["log_coefficient"] * np.log2((S.military_a + action_dict["log_epsilon"]) / (S.military_b + action_dict["log_epsilon"]))
+        reward = action_dict["log_coefficient"] * (np.log2((S.military_a + action_dict["log_epsilon"]) / (S.military_b + action_dict["log_epsilon"])) + action_dict["log_offset"])
 
         r_a = S.military_b / (S.military_a + S.military_b)
         r_b = S.military_a / (S.military_a + S.military_b)
@@ -469,12 +502,22 @@ class MadAction_v1:
         done = False
         winner = None
         reward, info = self.get_dynamics_fn()(S,C)
-        # check for Winner
-        
+
         # increment passive income
         S.cash_a += S.income_a
         S.cash_b += S.income_b
 
+        # check for nuke
+        if S.cash_a >= C.data[MadAction_v1.action_nuke]['cash_threshold'] and S.military_a >= C.data[MadAction_v1.action_nuke]['military_threshold']:
+            S.has_nukes_a = True
+        else: 
+            S.has_nukes_a = False
+        if S.cash_b >= C.data[MadAction_v1.action_nuke]['cash_threshold'] and S.military_b >= C.data[MadAction_v1.action_nuke]['military_threshold']:
+            S.has_nukes_b = True
+        else: 
+            S.has_nukes_b = False
+            
+        # check for Winner
         if S.cash_a < C.data["money_loss_threshold"] and S.cash_b < C.data["money_loss_threshold"]:
             done = True
         elif S.cash_a < C.data["money_loss_threshold"]:
@@ -493,6 +536,11 @@ class MadAction_v1:
     @property
     def action_str(self):
         return self.action_strings[self.action_idx]
+
+    @property
+    def action_str_short(self):
+        return self.action_strings_short[self.action_idx]
+    
 
     def __repr__(self):
         repr_str = ''
@@ -516,6 +564,12 @@ class MadAction_v1:
     def max_str_len(self):
         max_len = int(0)
         for string in self.action_strings:
+            max_len = max(len(string), max_len)
+        return max_len
+            
+    def max_str_short_len(self):
+        max_len = int(0)
+        for string in self.action_strings_short:
             max_len = max(len(string), max_len)
         return max_len
             
@@ -575,9 +629,9 @@ class MadEnv_v1(gym.Env):
 
         self.turn_count += 1
         if self.bar is not None:
-            L = A.max_str_len()+1
+            L = A.max_str_short_len()
             if self.A_action is not None and self.B_action is not None:
-                postfix = f"A_ac={self.A_action.action_str:>{L}}, B_ac={self.B_action.action_str:>{L}}, winner={winner}"
+                postfix = f"P={self.current_player[-1]}, S=[{self.S.str_short}], ac=[{self.A_action.action_str_short:>{L}}, {self.B_action.action_str_short:>{L}}], W={winner}"
                 self.bar.set_postfix_str(postfix)
             self.bar.update()
         if self.turn_count >= self.config.data["max_episode_length"]:
