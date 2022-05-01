@@ -45,7 +45,7 @@ class MadGameConfig_v1:
         for field in action_invest_mil_fields:
             self.data[action_invest_mil][field] = 0
 
-        action_atk_fields = ["military_threshold", "L_cash", "L_miltary", "log_coefficient", "log_epsilon"]
+        action_atk_fields = ["military_threshold", "L_cash", "L_military", "log_coefficient", "log_epsilon"]
         for field in action_atk_fields:
             self.data[action_attack][field] = 0
 
@@ -280,7 +280,7 @@ class MadState_v1:
                 continue
 
             attr_value = getattr(self, attr)
-            repr_str += "MadState_v1.{:20} = {:>5}\n".format(
+            repr_str += "MadState_v1.{:20} = {:>5.1f}\n".format(
                 attr, attr_value)
 
         return repr_str
@@ -339,6 +339,7 @@ class MadAction_v1:
         action_dict = C.data[MadAction_v1.action_invest_economy]
 
         if S.cash_a < action_dict["cash_threshold"]:
+            info["turn_desc"] = 'Player tried to invest in economy but had insufficient cash.'
             reward = C.data["invalid_penalty"]
             return reward, info
 
@@ -346,6 +347,7 @@ class MadAction_v1:
 
         S.cash_a += action_dict["cash_delta"]
         S.income_a += action_dict["income_delta"]
+        info["turn_desc"] = 'Player invested in economy.'
         return reward, info
 
     def action_invest_military_dynamics(self, S:MadState_v1, C:MadGameConfig_v1):
@@ -356,6 +358,7 @@ class MadAction_v1:
         action_dict = C.data[MadAction_v1.action_invest_military]
 
         if S.cash_a < action_dict["cash_threshold"]:
+            info["turn_desc"] = 'Player tried to invest in military but failed.'
             reward = C.data["invalid_penalty"]
             return reward, info
 
@@ -366,7 +369,8 @@ class MadAction_v1:
             reward = 0
 
         S.cash_a += action_dict["cash_delta"]
-        S.income_a += action_dict["income_delta"]
+        S.military_a += action_dict["military_delta"]
+        info["turn_desc"] = 'Player invested in military.'
         return reward, info
 
     def action_attack_dynamics(self, S:MadState_v1, C:MadGameConfig_v1):
@@ -377,6 +381,7 @@ class MadAction_v1:
         action_dict = C.data[MadAction_v1.action_attack]
 
         if S.cash_a < action_dict["cash_threshold"] or S.military_a < action_dict["military_threshold"]:
+            info["turn_desc"] = 'Player tried to attack but failed.'
             reward = C.data["invalid_penalty"]
             return reward, info
 
@@ -396,6 +401,7 @@ class MadAction_v1:
         if S.military_b < 0:
             S.military_b = 0
             
+        info["turn_desc"] = 'Player attacked.'
         return reward, info
 
     def action_threaten_dynamics(self, S:MadState_v1, C:MadGameConfig_v1):
@@ -406,11 +412,13 @@ class MadAction_v1:
         action_dict = C.data[MadAction_v1.action_threaten]
 
         if S.cash_a < action_dict["cash_threshold"] or S.military_a < action_dict["military_threshold"] or S.has_made_threat_a:
+            info["turn_desc"] = 'Player tried to threaten but failed.'
             reward = C.data["invalid_penalty"]
             return reward, info
 
         reward = action_dict["reward"]
         S.has_made_threat_a = True
+        info["turn_desc"] = 'Player threatened.'
         return reward, info
 
     def action_nuke_dynamics(self, S:MadState_v1, C:MadGameConfig_v1):
@@ -422,6 +430,7 @@ class MadAction_v1:
         action_dict = C.data[MadAction_v1.action_nuke]
 
         if S.cash_a < action_dict["cash_threshold"] or S.military_a < action_dict["military_threshold"] or not S.has_made_threat_a:
+            info["turn_desc"] = 'Player tried to nuke but failed.'
             reward = C.data["invalid_penalty"]
             return reward, info
 
@@ -433,9 +442,12 @@ class MadAction_v1:
         S.cash_a += action_dict["self_cash_delta_nuke_cost"]
         S.cash_b += action_dict["enemy_cash_delta"]
         S.military_b += action_dict["enemy_mil_delta"]
+        info["turn_desc"] = 'Player dropped a nuke on em.'
         if (S.has_nukes_b):
             S.cash_a += action_dict["self.cash_delta_second_strike"]
             S.military_a += action_dict["self_military_delta_second_strike"]
+            S.cash_b += action_dict["self_cash_delta_nuke_cost"]
+            info["turn_desc"] = 'Player dropped a nuke on em but then enemy dropped a nuke on player.'
 
         if S.military_a < 0:
             S.military_a = 0
@@ -457,6 +469,21 @@ class MadAction_v1:
         done = False
         winner = None
         reward, info = self.get_dynamics_fn()(S,C)
+        # check for Winner
+        
+        # increment passive income
+        S.cash_a += S.income_a
+        S.cash_b += S.income_b
+
+        if S.cash_a < C.data["money_loss_threshold"] and S.cash_b < C.data["money_loss_threshold"]:
+            done = True
+        elif S.cash_a < C.data["money_loss_threshold"]:
+            done = True
+            winner = MadEnv_v1.agent_b
+        elif S.cash_b < C.data["money_loss_threshold"]:
+            done = True
+            winner = MadEnv_v1.agent_a
+            reward += C.data["win_reward"]
         return reward, done, winner, info
                     
     @property
@@ -510,6 +537,8 @@ class MadEnv_v1(gym.Env):
         self.bar_episode = 0
         self.turn_count = 0
         self.config_path = None
+        self.A_action = None
+        self.B_action = None
         self.reset()
 
     def set_config_path(self, path):
@@ -547,10 +576,11 @@ class MadEnv_v1(gym.Env):
         self.turn_count += 1
         if self.bar is not None:
             L = A.max_str_len()+1
-            postfix = f"A_ac={self.A_action.action_str:>{L}}, B_ac={self.B_action.action_str:>{L}}, winner={winner}"
-            self.bar.set_postfix_str(postfix)
+            if self.A_action is not None and self.B_action is not None:
+                postfix = f"A_ac={self.A_action.action_str:>{L}}, B_ac={self.B_action.action_str:>{L}}, winner={winner}"
+                self.bar.set_postfix_str(postfix)
             self.bar.update()
-        if self.turn_count >= self.config.data["max_episodes_length"]:
+        if self.turn_count >= self.config.data["max_episode_length"]:
             done = True
             if self.bar is not None:
                 self.bar.close()
@@ -590,7 +620,7 @@ class MadEnv_v1(gym.Env):
 
         if self.show_bar:
             self.bar = tqdm(
-                total=self.config.data["max_episodes"], 
+                total=self.config.data["max_episode_length"], 
                 dynamic_ncols=True, 
                 leave=True,
                 # position=0, 

@@ -23,7 +23,7 @@
     "Attack": {
         "cash_threshold": 500,
         "L_cash": 100,
-        "L_miltary": 20,
+        "L_military": 20,
         "log_coefficient": 20,
         "log_epsilon": 1,
         "military_threshold": 100
