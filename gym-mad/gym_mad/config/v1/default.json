@@ -54,7 +54,7 @@
     "money_loss_threshold": 25,
     "invalid_penalty": -100,
     "over_max_penalty": -100,
-    "max_cash": 100000,
+    "max_cash": 10000,
     "max_income": 100,
     "max_military": 3000
 }

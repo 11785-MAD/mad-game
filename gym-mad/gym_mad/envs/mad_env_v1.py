@@ -138,6 +138,7 @@ class MadState_v1:
     observation_size = 10
 
     def __init__(self, config):
+        self.config = config
         self.data = np.zeros((10), dtype='float')
 
         # Setup initial conditions
@@ -164,7 +165,16 @@ class MadState_v1:
     # Observations for each agent
     @property
     def observation_a(self):
-        return self.data
+        S = MadState_v1(self.config)
+        S.data = self.data.copy()
+        S.cash_a /= S.config.data["max_cash"]
+        S.cash_b /= S.config.data["max_cash"]
+        S.income_a /= S.config.data["max_income"]
+        S.income_b /= S.config.data["max_income"]
+        S.military_a /= S.config.data["max_military"]
+        S.military_b /= S.config.data["max_military"]
+        
+        return S.data
         """
         return self.data[[self.idx_cash_a,
                           self.idx_income_a,
@@ -176,7 +186,16 @@ class MadState_v1:
 
     @property
     def observation_b(self):
-        return self.data
+        S = MadState_v1(self.config)
+        S.data = self.data.copy()
+        S.cash_a /= S.config.data["max_cash"]
+        S.cash_b /= S.config.data["max_cash"]
+        S.income_a /= S.config.data["max_income"]
+        S.income_b /= S.config.data["max_income"]
+        S.military_a /= S.config.data["max_military"]
+        S.military_b /= S.config.data["max_military"]
+        S.swap_agents()
+        return S.data
         """
         return self.data[[self.idx_cash_b,
                           self.idx_income_b,
