@@ -636,6 +636,7 @@ class MadEnv_v1(gym.Env):
         self.show_bar = False
         self.bar = None
         self.bar_episode = 0
+        self.bar_postifx = ''
         self.turn_count = 0
         self.config_path = None
         self.A_action = None
@@ -678,7 +679,7 @@ class MadEnv_v1(gym.Env):
         if self.bar is not None:
             L = A.max_str_short_len()
             if self.A_action is not None and self.B_action is not None:
-                postfix = f"P={self.current_player[-1]}, S=[{self.S.str_short}], ac=[{self.A_action.action_str_short:>{L}}, {self.B_action.action_str_short:>{L}}], W={winner}"
+                postfix = f"{self.bar_postifx}P={self.current_player[-1]}, S=[{self.S.str_short}], ac=[{self.A_action.action_str_short:>{L}}, {self.B_action.action_str_short:>{L}}], W={winner}"
                 self.bar.set_postfix_str(postfix)
             self.bar.update()
         if self.turn_count >= self.config.data["max_episode_length"]:
@@ -705,6 +706,9 @@ class MadEnv_v1(gym.Env):
     def set_show_bar(self, show=True, e = 0):
         self.show_bar = show
         self.bar_episode = e
+
+    def set_bar_postfix(self, postfix):
+        self.bar_postifx = postfix
 
     def reset(self):
         self.turn_count = 0

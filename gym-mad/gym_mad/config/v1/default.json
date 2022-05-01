@@ -56,5 +56,5 @@
     "over_max_penalty": -100,
     "max_cash": 10000,
     "max_income": 100,
-    "max_military": 3000
+    "max_military": 1000
 }
