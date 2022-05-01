@@ -464,8 +464,10 @@ class MadAction_v1:
         # note: assumes L_cash, L_military are POSITIVE
         S.cash_a -= action_dict["L_cash"] * r_a
         S.military_a -= action_dict["L_military"] * r_a
+        S.income_a -= action_dict["L_income"] * r_a
         S.cash_b -= action_dict["L_cash"] * r_b
         S.military_b -= action_dict["L_military"] * r_b
+        S.income_b -= action_dict["L_income"] * r_b
         
         if S.military_a < 0:
             unpaid_loss = -S.military_a

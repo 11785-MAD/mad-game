@@ -24,12 +24,13 @@
     },
     "Attack": {
         "cash_threshold": 500,
-        "L_cash": 100,
-        "L_military": 20,
+        "L_cash": 500,
+        "L_military": 100,
         "log_coefficient": 20,
         "log_epsilon": 1,
         "military_threshold": 100,
         "military_cash_scale_factor": 5,
+        "L_income": 15,
         "log_offset": -0.5
     },
     "Nuke": {
