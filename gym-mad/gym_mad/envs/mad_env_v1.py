@@ -6,6 +6,7 @@ import copy
 import json
 import os
 from tqdm import tqdm
+import math
 
 
 class MadGameConfig_v1:
@@ -37,7 +38,7 @@ class MadGameConfig_v1:
         action_nuke = MadAction_v1.action_nuke
 
         # set action-specific attributes
-        action_invest_eco_fields = ["income_delta", "cash_delta", "log_coefficient", "reward_offset", "min_reward"]
+        action_invest_eco_fields = ["income_delta", "cash_delta", "log_coefficient", "log_base", "reward_offset", "min_reward"]
         for field in action_invest_eco_fields:
             self.data[action_invest_eco][field] = 0
 
@@ -382,18 +383,15 @@ class MadAction_v1:
             return reward, info
         elif (S.cash_a > C.data["max_cash"]):
             info["turn_desc"] = 'Player tried to invest in economy but had over max cash.'
-            S.cash_a = C.data["max_cash"]
             reward = C.data["over_max_penalty"]
             return reward, info
         elif (S.income_a > C.data["max_income"]):
             info["turn_desc"] = 'Player tried to invest in economy but had over max income.'
-            S.income_a = C.data["max_income"]
             reward = C.data["over_max_penalty"]
             return reward, info
 
 
-        reward = max(1, action_dict["log_coefficient"] * np.log(S.cash_a) + action_dict["reward_offset"])
-
+        reward = max(1, action_dict["log_coefficient"] * math.log(S.cash_a, action_dict["log_base"]) + action_dict["reward_offset"])
         S.cash_a += action_dict["cash_delta"]
         S.income_a += action_dict["income_delta"]
         info["turn_desc"] = 'Player invested in economy.'
@@ -412,7 +410,6 @@ class MadAction_v1:
             return reward, info
         elif (S.military_a > C.data["max_military"]):
             info["turn_desc"] = 'Player tried to invest in military but had over max military.'
-            S.military_a = C.data["max_military"]
             reward = C.data["over_max_penalty"]
             return reward, info
 
@@ -528,6 +525,15 @@ class MadAction_v1:
         # increment passive income
         S.cash_a += S.income_a
         S.cash_b += S.income_b
+
+        if (S.cash_a > C.data["max_cash"]):
+            S.cash_a = C.data["max_cash"]
+        if (S.cash_b > C.data["max_cash"]):
+            S.cash_b = C.data["max_cash"]
+        if (S.income_a > C.data["max_income"]):
+            S.income_a = C.data["max_income"]
+        if (S.military_a > C.data["max_military"]):
+            S.military_a = C.data["max_military"]
 
         # check for nuke
         if S.cash_a >= C.data[MadAction_v1.action_nuke]['cash_threshold'] and S.military_a >= C.data[MadAction_v1.action_nuke]['military_threshold']:
