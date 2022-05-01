@@ -399,21 +399,23 @@ class MadEnv_v0(gym.Env):
         observation[self.agent_a] = self.S.observation_a
         observation[self.agent_b] = self.S.observation_b
 
-        self.change_playing_agent()
 
         self.turn_count += 1
         if self.bar is not None:
+            self.bar.set_postfix(ac=A.action_str,winner=winner)
             self.bar.update()
-        if self.turn_count > self.config.data["max_episodes"]:
+        if self.turn_count >= self.config.data["max_episodes"]:
             done = True
             if self.bar is not None:
                 self.bar.close()
                 self.bar = None
-                
+
         info['turn_count'] = self.turn_count
         info['action'] = A
         info['winner'] = winner
         info['player'] = self.current_player
+
+        self.change_playing_agent()
 
         return observation, reward, done, info
 
