@@ -13,7 +13,8 @@
         "military_delta": 10,
         "log_coefficient": 40,
         "log_epsilon": 1,
-        "military_cash_scale_factor": 5
+        "military_cash_scale_factor": 5,
+        "military_size_limit": 600
     },
     "Threaten": {
         "cash_threshold": 4000,

@@ -400,7 +400,8 @@ class MadAction_v1:
             reward = action_dict["log_coefficient"] * np.log2(ratio)
         else:
             reward = 0
-
+        if S.military_a > action_dict['military_size_limit']:
+            S.military_a *= (action_dict['military_size_limit']/S.military_a)**2
         S.cash_a += action_dict["cash_delta"]
         S.military_a += action_dict["military_delta"]
         info["turn_desc"] = 'Player invested in military.'
