@@ -41,20 +41,20 @@ class MadGameConfig_v1:
         for field in action_invest_eco_fields:
             self.data[action_invest_eco][field] = 0
 
-        action_invest_mil_fields = ["cash_delta", "military_delta", "log_coefficient", "military_cash_scale_factor"]
+        action_invest_mil_fields = ["cash_delta", "military_delta", "log_coefficient","log_epsilon", "military_cash_scale_factor"]
         for field in action_invest_mil_fields:
             self.data[action_invest_mil][field] = 0
 
-        action_atk_fields = ["L_cash", "L_miltary", "log_coefficient", "log_epsilon", "military_threshold"]
+        action_atk_fields = ["military_threshold", "L_cash", "L_miltary", "log_coefficient", "log_epsilon"]
         for field in action_atk_fields:
             self.data[action_attack][field] = 0
 
-        action_threaten_fields = ["reward", "military_threshold"]
+        action_threaten_fields = ["military_threshold", "reward"]
         for field in action_threaten_fields:
             self.data[action_threaten][field] = 0
 
-        action_nuke_fields = ["enemy_cash_delta", "enemy_mil_delta","self_cash_delta_nuke_cost","self_cash_delta_second_strike",
-                              "self_military_delta_second_strike","reward_enemy_no_nuke","reward_enemy_has_nuke", "military_threshold"]
+        action_nuke_fields = ["military_threshold", "enemy_cash_delta", "enemy_mil_delta","self_cash_delta_nuke_cost","self_cash_delta_second_strike",
+                              "self_military_delta_second_strike","reward_enemy_no_nuke","reward_enemy_has_nuke"]
         for field in action_nuke_fields:
             self.data[action_nuke][field] = 0
 
@@ -129,10 +129,10 @@ class MadState_v1:
     idx_has_made_threat_b = 8
     idx_has_nukes_b = 9
 
-    observation_size = 5
+    observation_size = 6
 
     def __init__(self, config):
-        self.data = np.zeros((10), dtype='int')
+        self.data = np.zeros((10), dtype='float')
 
         # Setup initial conditions
         self.cash_a = config.data["ic"]["cash"]
@@ -158,17 +158,27 @@ class MadState_v1:
     # Observations for each agent
     @property
     def observation_a(self):
-        return self.data[0:5]
+        return self.data[[self.idx_cash_a,
+                          self.idx_income_a,
+                          self.idx_military_a,
+                          self.idx_has_made_threat_a,
+                          self.idx_has_nukes_a,
+                          self.idx_has_made_threat_b]]
 
     @property
     def observation_b(self):
-        return self.data[5:10]
+        return self.data[[self.idx_cash_b,
+                          self.idx_income_b,
+                          self.idx_military_b,
+                          self.idx_has_made_threat_b,
+                          self.idx_has_nukes_b,
+                          self.idx_has_made_threat_a]]
 
     # Player A
     # Cash A
     @property
     def cash_a(self):
-        return self.data[self.idx_cash_a].astype(int)
+        return self.data[self.idx_cash_a].astype(float)
 
     @cash_a.setter
     def cash_a(self, x):
@@ -177,7 +187,7 @@ class MadState_v1:
     # Income A
     @property
     def income_a(self):
-        return self.data[self.idx_income_a].astype(int)
+        return self.data[self.idx_income_a].astype(float)
 
     @income_a.setter
     def income_a(self, x):
@@ -186,7 +196,7 @@ class MadState_v1:
     # Military A
     @property
     def military_a(self):
-        return self.data[self.idx_military_a].astype(int)
+        return self.data[self.idx_military_a].astype(float)
 
     @military_a.setter
     def military_a(self, x):
@@ -195,7 +205,7 @@ class MadState_v1:
     # Has Made Threat A
     @property
     def has_made_threat_a(self):
-        return self.data[self.idx_has_made_threat_a].astype(int)
+        return self.data[self.idx_has_made_threat_a].astype(bool)
 
     @has_made_threat_a.setter
     def has_made_threat_a(self, x):
@@ -204,7 +214,7 @@ class MadState_v1:
     # Has Nukes A
     @property
     def has_nukes_a(self):
-        return self.data[self.idx_has_nukes_a].astype(int)
+        return self.data[self.idx_has_nukes_a].astype(bool)
 
     @has_nukes_a.setter
     def has_nukes_a(self, x):
@@ -214,7 +224,7 @@ class MadState_v1:
     # Cash B
     @property
     def cash_b(self):
-        return self.data[self.idx_cash_b].astype(int)
+        return self.data[self.idx_cash_b].astype(float)
 
     @cash_b.setter
     def cash_b(self, x):
@@ -223,7 +233,7 @@ class MadState_v1:
     # Income B
     @property
     def income_b(self):
-        return self.data[self.idx_income_b].astype(int)
+        return self.data[self.idx_income_b].astype(float)
 
     @income_b.setter
     def income_b(self, x):
@@ -232,7 +242,7 @@ class MadState_v1:
     # Military B
     @property
     def military_b(self):
-        return self.data[self.idx_military_b].astype(int)
+        return self.data[self.idx_military_b].astype(float)
 
     @military_b.setter
     def military_b(self, x):
@@ -241,7 +251,7 @@ class MadState_v1:
     # Has Made Threat B
     @property
     def has_made_threat_b(self):
-        return self.data[self.idx_has_made_threat_b].astype(int)
+        return self.data[self.idx_has_made_threat_b].astype(bool)
 
     @has_made_threat_b.setter
     def has_made_threat_b(self, x):
@@ -250,7 +260,7 @@ class MadState_v1:
     # Has Nukes B
     @property
     def has_nukes_b(self):
-        return self.data[self.idx_has_nukes_b].astype(int)
+        return self.data[self.idx_has_nukes_b].astype(bool)
 
     @has_nukes_b.setter
     def has_nukes_b(self, x):
@@ -349,7 +359,7 @@ class MadAction_v1:
             reward = C.data["invalid_penalty"]
             return reward, info
 
-        ratio = S.cash_a / (S.military_a * action_dict["military_cash_scale_factor"])
+        ratio = S.cash_a / ((S.military_a + action_dict["log_epsilon"]) * action_dict["military_cash_scale_factor"])
         if (ratio > 1):
             reward = action_dict["log_coefficient"] * np.log2(ratio)
         else:
@@ -370,7 +380,7 @@ class MadAction_v1:
             reward = C.data["invalid_penalty"]
             return reward, info
 
-        reward = action_dict["log_coefficient"] * np.log2((S.military_a + 1) / (S.military_b + 1))
+        reward = action_dict["log_coefficient"] * np.log2((S.military_a + action_dict["log_epsilon"]) / (S.military_b + action_dict["log_epsilon"]))
 
         r_a = S.military_b / (S.military_a + S.military_b)
         r_b = S.military_a / (S.military_a + S.military_b)
@@ -380,6 +390,12 @@ class MadAction_v1:
         S.cash_b -= action_dict["L_cash"] * r_b
         S.military_b -= action_dict["L_military"] * r_b
         
+        if S.military_a < 0:
+            S.military_a = 0
+
+        if S.military_b < 0:
+            S.military_b = 0
+            
         return reward, info
 
     def action_threaten_dynamics(self, S:MadState_v1, C:MadGameConfig_v1):
@@ -389,7 +405,7 @@ class MadAction_v1:
         info["turn_desc"] = ''
         action_dict = C.data[MadAction_v1.action_threaten]
 
-        if S.cash_a < action_dict["cash_threshold"] or S.military_a < action_dict["military_threshold"] or not S.has_made_threat_a:
+        if S.cash_a < action_dict["cash_threshold"] or S.military_a < action_dict["military_threshold"] or S.has_made_threat_a:
             reward = C.data["invalid_penalty"]
             return reward, info
 
@@ -420,6 +436,12 @@ class MadAction_v1:
         if (S.has_nukes_b):
             S.cash_a += action_dict["self.cash_delta_second_strike"]
             S.military_a += action_dict["self_military_delta_second_strike"]
+
+        if S.military_a < 0:
+            S.military_a = 0
+
+        if S.military_b < 0:
+            S.military_b = 0
 
         return reward, info
 
