@@ -5,6 +5,7 @@ import numpy as np
 import copy
 import json
 import os
+from tqdm import tqdm
 
 
 class MadGameConfig_v0:
@@ -52,6 +53,7 @@ class MadGameConfig_v0:
         self.data["ic"]["has_nukes"] = 0
 
         self.data["win_reward"] = 0
+        self.data["max_episodes"] = 1000
 
     def get_path_config_folder(self):
         parent_dir = os.path.dirname(os.path.abspath(__file__))
@@ -361,6 +363,9 @@ class MadEnv_v0(gym.Env):
     agent_b = 'Agent B'
 
     def __init__(self):
+        self.show_bar = False
+        self.bar = None
+        self.bar_episode = 0
         self.turn_count = 0
         self.config_path = None
         self.reset()
@@ -397,6 +402,14 @@ class MadEnv_v0(gym.Env):
         self.change_playing_agent()
 
         self.turn_count += 1
+        if self.bar is not None:
+            self.bar.update()
+        if self.turn_count > self.config.data["max_episodes"]:
+            done = True
+            if self.bar is not None:
+                self.bar.close()
+                self.bar = None
+                
         info['turn_count'] = self.turn_count
         info['action'] = A
         info['winner'] = winner
@@ -532,6 +545,10 @@ class MadEnv_v0(gym.Env):
         else:
             self.current_player = self.agent_a
 
+    def set_show_bar(self, show=True, e = 0):
+        self.show_bar = show
+        self.bar_episode = e
+
     def reset(self):
         self.turn_count = 0
         self.current_player = self.agent_a
@@ -540,6 +557,19 @@ class MadEnv_v0(gym.Env):
         observation = dict()
         observation[self.agent_a] = self.S.observation_a
         observation[self.agent_b] = self.S.observation_b
+
+        if self.bar is not None:
+            self.bar.close()
+            self.bar = None
+
+        if self.show_bar:
+            self.bar = tqdm(
+                total=self.config.data["max_episodes"], 
+                dynamic_ncols=True, 
+                leave=True,
+                # position=0, 
+                desc=f'MAD Episode {self.bar_episode:5d}'
+            )
 
         return observation
 
