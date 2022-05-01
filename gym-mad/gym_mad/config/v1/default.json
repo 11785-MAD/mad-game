@@ -1,6 +1,6 @@
 {
     "Invest Economy": {
-        "cash_threshold": 10,
+        "cash_threshold": 25,
         "income_delta": 3,
         "cash_delta": 10,
         "log_coefficient": -17.41,
@@ -8,7 +8,7 @@
         "min_reward": 1
     },
     "Invest Military": {
-        "cash_threshold": 10,
+        "cash_threshold": 25,
         "cash_delta": -10,
         "military_delta": 10,
         "log_coefficient": 40,
@@ -29,7 +29,7 @@
         "military_threshold": 100
     },
     "Nuke": {
-        "cash_threshold": 2000,
+        "cash_threshold": 4000,
         "enemy_cash_delta": -5000,
         "enemy_mil_delta": -100,
         "self_cash_delta_nuke_cost": -2000,
