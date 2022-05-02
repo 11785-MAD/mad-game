@@ -315,7 +315,7 @@ class MadState_v1:
 
     def __repr__(self):
         repr_str = ''
-        exclude_list = ['__', 'ic', 'idx', 'data', 'observation', 'swap', 'str_short']
+        exclude_list = ['__', 'ic', 'idx', 'data', 'observation', 'swap', 'str_short', 'config']
         for attr in dir(self):
             is_excluded = False
             for e in exclude_list:
@@ -327,6 +327,7 @@ class MadState_v1:
                 continue
 
             attr_value = getattr(self, attr)
+            print("__repr__: attr:" + str(attr) + ", attr_value:" + str(attr_value))
             repr_str += "MadState_v1.{:20} = {:>5.1f}\n".format(
                 attr, attr_value)
 
@@ -478,7 +479,9 @@ class MadAction_v1:
             unpaid_loss = -S.military_b
             S.military_b = 0
             S.cash_b -= unpaid_loss * action_dict["military_cash_scale_factor"]
-            
+        
+        if S.income_a < 0: S.income_a=0
+        if S.income_b < 0: S.income_b=0
         info["turn_desc"] = 'Player attacked.'
         return reward, info
 
@@ -522,7 +525,7 @@ class MadAction_v1:
         S.military_b += action_dict["enemy_mil_delta"]
         info["turn_desc"] = 'Player dropped a nuke on em.'
         if (S.has_nukes_b):
-            S.cash_a += action_dict["self.cash_delta_second_strike"]
+            S.cash_a += action_dict["self_cash_delta_second_strike"]
             S.military_a += action_dict["self_military_delta_second_strike"]
             S.cash_b += action_dict["self_cash_delta_nuke_cost"]
             info["turn_desc"] = 'Player dropped a nuke on em but then enemy dropped a nuke on player.'
