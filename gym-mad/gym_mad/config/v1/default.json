@@ -24,24 +24,24 @@
     },
     "Attack": {
         "cash_threshold": 500,
-        "L_cash": 500,
-        "L_military": 100,
-        "log_coefficient": 20,
+        "L_cash": 300,
+        "L_military": 60,
+        "log_coefficient": 10,
         "log_epsilon": 1,
         "military_threshold": 100,
         "military_cash_scale_factor": 5,
-        "L_income": 15,
+        "L_income": 10,
         "log_offset": -0.5
     },
     "Nuke": {
         "cash_threshold": 4000,
-        "enemy_cash_delta": -50000,
+        "enemy_cash_delta": -20000,
         "enemy_mil_delta": -1000,
         "self_cash_delta_nuke_cost": -2000,
-        "self_cash_delta_second_strike": -5000,
-        "self_military_delta_second_strike": -100,
-        "reward_enemy_no_nuke": 400,
-        "reward_enemy_has_nuke": -500,
+        "self_cash_delta_second_strike": -20000,
+        "self_military_delta_second_strike": -1000,
+        "reward_enemy_no_nuke": 1000,
+        "reward_enemy_has_nuke": -1000,
         "military_threshold": 400
     },
     "ic": {
