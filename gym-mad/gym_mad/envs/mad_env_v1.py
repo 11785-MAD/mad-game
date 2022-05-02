@@ -709,7 +709,7 @@ class MadEnv_v1(gym.Env):
         # if winner == self.current_player:
         #     reward += self.config.data["max_episode_length"] - self.turn_count
 
-        self.change_playing_agent()
+        if not done: self.change_playing_agent()
 
         return observation, reward, done, info
 
