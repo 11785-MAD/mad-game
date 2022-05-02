@@ -18,9 +18,9 @@
         "military_size_limit": 600
     },
     "Threaten": {
-        "cash_threshold": 4000,
+        "cash_threshold": 2100,
         "reward": 100,
-        "military_threshold": 400
+        "military_threshold": 200
     },
     "Attack": {
         "cash_threshold": 500,
@@ -34,7 +34,7 @@
         "log_offset": -0.5
     },
     "Nuke": {
-        "cash_threshold": 4000,
+        "cash_threshold": 2100,
         "enemy_cash_delta": -20000,
         "enemy_mil_delta": -1000,
         "self_cash_delta_nuke_cost": -2000,
@@ -42,7 +42,7 @@
         "self_military_delta_second_strike": -1000,
         "reward_enemy_no_nuke": 1000,
         "reward_enemy_has_nuke": -1000,
-        "military_threshold": 400
+        "military_threshold": 200
     },
     "ic": {
         "cash": 100,
