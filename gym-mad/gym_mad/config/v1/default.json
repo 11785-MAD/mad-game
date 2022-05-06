@@ -2,7 +2,7 @@
     "Invest Economy": {
         "cash_threshold": 25,
         "income_delta": 3,
-        "cash_delta": 10,
+        "cash_delta": -10,
         "log_coefficient": -8.9,
         "reward_offset": 200,
         "min_reward": 1,
