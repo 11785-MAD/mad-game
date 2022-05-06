@@ -311,7 +311,6 @@ class MadState_v1:
                 continue
 
             attr_value = getattr(self, attr)
-            print("__repr__: attr:" + str(attr) + ", attr_value:" + str(attr_value))
             repr_str += "MadState_v1.{:20} = {:>5.1f}\n".format(
                 attr, attr_value)
 
