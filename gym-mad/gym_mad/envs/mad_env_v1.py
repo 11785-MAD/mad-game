@@ -175,7 +175,7 @@ class MadState_v1:
         S.military_a /= S.config.data["max_military"]
         S.military_b /= S.config.data["max_military"]
         
-        return S.data
+        return S.data - 0.5
 
     @property
     def observation_b(self):
@@ -188,7 +188,7 @@ class MadState_v1:
         S.military_a /= S.config.data["max_military"]
         S.military_b /= S.config.data["max_military"]
         S.swap_agents()
-        return S.data
+        return S.data - 0.5
 
     # Player A
     # Cash A
@@ -453,16 +453,12 @@ class MadAction_v1:
         
         if S.military_a < 0:
             unpaid_loss = -S.military_a
-            S.military_a = 0
             S.cash_a -= unpaid_loss * action_dict["military_cash_scale_factor"]
 
         if S.military_b < 0:
             unpaid_loss = -S.military_b
-            S.military_b = 0
             S.cash_b -= unpaid_loss * action_dict["military_cash_scale_factor"]
         
-        if S.income_a < 0: S.income_a=0
-        if S.income_b < 0: S.income_b=0
         info["turn_desc"] = 'Player attacked.'
         return reward, info
 
@@ -499,20 +495,17 @@ class MadAction_v1:
             reward = action_dict["reward_enemy_no_nuke"]
 
         S.cash_a += action_dict["self_cash_delta_nuke_cost"]
-        S.cash_b += action_dict["enemy_cash_delta"]
-        S.military_b += action_dict["enemy_mil_delta"]
+        S.cash_b += action_dict["cash_delta"]
+        S.military_b += action_dict["mil_delta"]
+        S.income_b += action_dict["passive_income_delta"]
         info["turn_desc"] = 'Player dropped a nuke on em.'
+        
         if (S.has_nukes_b):
-            S.cash_a += action_dict["self_cash_delta_second_strike"]
-            S.military_a += action_dict["self_military_delta_second_strike"]
+            S.cash_a += action_dict["cash_delta"]
+            S.military_a += action_dict["mil_delta"]
+            S.income_a += action_dict["passive_income_delta"]
             S.cash_b += action_dict["self_cash_delta_nuke_cost"]
             info["turn_desc"] = 'Player dropped a nuke on em but then enemy dropped a nuke on player.'
-
-        if S.military_a < 0:
-            S.military_a = 0
-
-        if S.military_b < 0:
-            S.military_b = 0
 
         return reward, info
 
@@ -529,18 +522,17 @@ class MadAction_v1:
         winner = None
         reward, info = self.get_dynamics_fn()(S,C)
 
+        # clip values
+        S.cash_a = np.clip(S.cash_a, 0, C.data["max_cash"])
+        S.cash_b = np.clip(S.cash_b, 0, C.data["max_cash"])
+        S.income_a = np.clip(S.income_a, 0, C.data["max_income"])
+        S.income_b = np.clip(S.income_b, 0, C.data["max_income"])
+        S.military_a = np.clip(S.military_a, 0, C.data["max_military"])
+        S.military_b = np.clip(S.military_b, 0, C.data["max_military"])
+            
         # increment passive income
         S.cash_a += S.income_a
         S.cash_b += S.income_b
-
-        if (S.cash_a > C.data["max_cash"]):
-            S.cash_a = C.data["max_cash"]
-        if (S.cash_b > C.data["max_cash"]):
-            S.cash_b = C.data["max_cash"]
-        if (S.income_a > C.data["max_income"]):
-            S.income_a = C.data["max_income"]
-        if (S.military_a > C.data["max_military"]):
-            S.military_a = C.data["max_military"]
 
         # check for nuke
         if S.cash_a >= C.data[MadAction_v1.action_nuke]['cash_threshold'] and S.military_a >= C.data[MadAction_v1.action_nuke]['military_threshold']:
@@ -553,12 +545,14 @@ class MadAction_v1:
             S.has_nukes_b = False
             
         # check for Winner
-        if S.cash_a < C.data["money_loss_threshold"] and S.cash_b < C.data["money_loss_threshold"]:
+        a_lost = S.cash_a <= 0 and S.military_a <= 0 and S.income_a <= 0
+        b_lost = S.cash_b <= 0 and S.military_b <= 0 and S.income_b <= 0
+        if a_lost and b_lost:
             done = True
-        elif S.cash_a < C.data["money_loss_threshold"]:
+        elif a_lost:
             done = True
             winner = MadEnv_v1.agent_b
-        elif S.cash_b < C.data["money_loss_threshold"]:
+        elif b_lost:
             done = True
             winner = MadEnv_v1.agent_a
             reward += C.data["win_reward"]
