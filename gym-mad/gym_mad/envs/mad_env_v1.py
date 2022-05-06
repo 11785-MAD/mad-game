@@ -523,8 +523,7 @@ class MadAction_v1:
         reward, info = self.get_dynamics_fn()(S,C)
 
         # clip values
-        S.cash_a = np.clip(S.cash_a, 0, C.data["max_cash"])
-        S.cash_b = np.clip(S.cash_b, 0, C.data["max_cash"])
+        
         S.income_a = np.clip(S.income_a, 0, C.data["max_income"])
         S.income_b = np.clip(S.income_b, 0, C.data["max_income"])
         S.military_a = np.clip(S.military_a, 0, C.data["max_military"])
@@ -533,6 +532,9 @@ class MadAction_v1:
         # increment passive income
         S.cash_a += S.income_a
         S.cash_b += S.income_b
+        
+        S.cash_a = np.clip(S.cash_a, 0, C.data["max_cash"])
+        S.cash_b = np.clip(S.cash_b, 0, C.data["max_cash"])
 
         # check for nuke
         if S.cash_a >= C.data[MadAction_v1.action_nuke]['cash_threshold'] and S.military_a >= C.data[MadAction_v1.action_nuke]['military_threshold']:
