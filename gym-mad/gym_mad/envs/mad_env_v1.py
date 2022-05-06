@@ -176,14 +176,6 @@ class MadState_v1:
         S.military_b /= S.config.data["max_military"]
         
         return S.data
-        """
-        return self.data[[self.idx_cash_a,
-                          self.idx_income_a,
-                          self.idx_military_a,
-                          self.idx_has_made_threat_a,
-                          self.idx_has_nukes_a,
-                          self.idx_has_made_threat_b]]
-                          """
 
     @property
     def observation_b(self):
@@ -197,14 +189,6 @@ class MadState_v1:
         S.military_b /= S.config.data["max_military"]
         S.swap_agents()
         return S.data
-        """
-        return self.data[[self.idx_cash_b,
-                          self.idx_income_b,
-                          self.idx_military_b,
-                          self.idx_has_made_threat_b,
-                          self.idx_has_nukes_b,
-                          self.idx_has_made_threat_a]]
-                          """
 
     # Player A
     # Cash A
@@ -392,8 +376,7 @@ class MadAction_v1:
         self.data = data
 
     def action_invest_economy_dynamics(self, S:MadState_v1, C:MadGameConfig_v1):
-        # action_invest_eco_fields = ["income_delta", "cash_delta", "log_coefficient", "reward_offset", "min_reward"]
-        reward = 0#max(1, C.data[]["log_coefficient"] * np.log(S))
+        reward = 0
         info = dict()
         info["turn_desc"] = ''
         action_dict = C.data[MadAction_v1.action_invest_economy]
@@ -419,7 +402,6 @@ class MadAction_v1:
         return reward, info
 
     def action_invest_military_dynamics(self, S:MadState_v1, C:MadGameConfig_v1):
-        # action_invest_mil_fields = ["cash_delta", "military_delta", "log_coefficient", "military_cash_scale_factor", "military_size_limit"]
         reward = 0
         info = dict()
         info["turn_desc"] = ''
@@ -447,7 +429,6 @@ class MadAction_v1:
         return reward, info
 
     def action_attack_dynamics(self, S:MadState_v1, C:MadGameConfig_v1):
-        # action_atk_fields = ["L_cash", "L_miltary", "log_coefficient", "log_epsilon", "military_threshold"]
         reward = 0
         info = dict()
         info["turn_desc"] = ''
@@ -486,7 +467,6 @@ class MadAction_v1:
         return reward, info
 
     def action_threaten_dynamics(self, S:MadState_v1, C:MadGameConfig_v1):
-        # action_threaten_fields = ["reward", "military_threshold"]
         reward = 0
         info = dict()
         info["turn_desc"] = ''
@@ -503,8 +483,6 @@ class MadAction_v1:
         return reward, info
 
     def action_nuke_dynamics(self, S:MadState_v1, C:MadGameConfig_v1):
-        # action_nuke_fields = ["enemy_cash_delta", "enemy_mil_delta","self_cash_delta_nuke_cost","self_cash_delta_second_strike",
-                            #   "self_military_delta_second_strike","reward_enemy_no_nuke","reward_enemy_has_nuke", "military_threshold"]
         reward = 0
         info = dict()
         info["turn_desc"] = ''
@@ -515,7 +493,7 @@ class MadAction_v1:
             reward = C.data["invalid_penalty"]
             return reward, info
 
-        if S.has_made_threat_b: # TODO change condition to enemy has NUKES (force agent to learn threat-nuke connection)
+        if S.has_made_threat_b:
             reward = action_dict["reward_enemy_has_nuke"]
         else:
             reward = action_dict["reward_enemy_no_nuke"]
@@ -674,9 +652,6 @@ class MadEnv_v1(gym.Env):
             reward, done, winner, info = A.apply_dynamics(self.S,self.config)
             self.S.swap_agents()
 
-            # TODO: Winner is always agent a because it is
-            # determined in game dynamics. Fix this.
-            # temp solution to fix Agent A always winning
             if (winner == self.agent_a):
                 winner = self.agent_b
             elif (winner == self.agent_b):
@@ -705,10 +680,6 @@ class MadEnv_v1(gym.Env):
         info['winner'] = winner
         info['player'] = self.current_player
         
-        # extra reward for finishing early
-        # if winner == self.current_player:
-        #     reward += self.config.data["max_episode_length"] - self.turn_count
-
         if not done: self.change_playing_agent()
 
         return observation, reward, done, info
@@ -744,7 +715,6 @@ class MadEnv_v1(gym.Env):
                 total=self.config.data["max_episode_length"], 
                 dynamic_ncols=True, 
                 leave=True,
-                # position=0, 
                 desc=f'MAD Episode {self.bar_episode:5d}'
             )
 
