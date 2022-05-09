@@ -89,7 +89,7 @@
             "insufficient_military": 0,
             "insufficient_threat": -10
         },
-        "reward": 0
+        "reward": 1000
     },
     "Nuke": {
         "player": {
@@ -123,5 +123,4 @@
     },
     "win_reward": 1000,
     "max_episodes": 1000
-
 }

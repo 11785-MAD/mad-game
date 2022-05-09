@@ -1,0 +1,62 @@
+{
+    "Invest Economy": {
+        "cash_threshold": 25,
+        "income_delta": 3,
+        "cash_delta": -10,
+        "log_coefficient": -8.9,
+        "reward_offset": 200,
+        "min_reward": 1,
+        "log_base":  1.5
+    },
+    "Invest Military": {
+        "cash_threshold": 25,
+        "cash_delta": -10,
+        "military_delta": 10,
+        "log_coefficient": 10,
+        "log_epsilon": 1,
+        "military_cash_scale_factor": 5,
+        "military_size_limit": 600
+    },
+    "Threaten": {
+        "cash_threshold": 2100,
+        "reward": 500,
+        "military_threshold": 200
+    },
+    "Attack": {
+        "cash_threshold": 500,
+        "L_cash": 300,
+        "L_military": 60,
+        "log_coefficient": 10,
+        "log_epsilon": 1,
+        "military_threshold": 100,
+        "military_cash_scale_factor": 5,
+        "L_income": 10,
+        "log_offset": -0.5
+    },
+    "Nuke": {
+        "cash_threshold": 2100,
+        "cash_delta": -20000,
+        "mil_delta": -1000,
+        "self_cash_delta_nuke_cost": -2000,
+        "reward_enemy_no_nuke": 1000,
+        "reward_enemy_has_nuke": -1000,
+        "military_threshold": 200,
+        "passive_income_delta": -100
+    },
+    "ic": {
+        "cash": 100,
+        "income": 0,
+        "military": 0,
+        "has_made_threat": 0,
+        "has_nukes": 0
+    },
+    "win_reward": 1000,
+    "max_episode_length": 1000,
+    "money_loss_threshold": 25,
+    "invalid_penalty": -100,
+    "over_max_penalty": -100,
+    "max_cash": 10000,
+    "max_income": 100,
+    "max_military": 1000,
+    "reward_scale": 0.001
+}

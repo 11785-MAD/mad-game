@@ -5,6 +5,7 @@ import numpy as np
 import copy
 import json
 import os
+from tqdm import tqdm
 
 
 class MadGameConfig_v0:
@@ -52,6 +53,7 @@ class MadGameConfig_v0:
         self.data["ic"]["has_nukes"] = 0
 
         self.data["win_reward"] = 0
+        self.data["max_episodes"] = 1000
 
     def get_path_config_folder(self):
         parent_dir = os.path.dirname(os.path.abspath(__file__))
@@ -296,10 +298,10 @@ class MadAction_v0:
         if not isinstance(data, np.ndarray):
             raise ValueError("Data must be of type numpy.ndarray")
 
-        if not data.shape == (5,):
+        if not data.shape == (MadAction_v0.action_size,):
             raise ValueError("Data must be of shape (5,)")
 
-        if not (np.sum(data == 0) == 4 and np.sum(data == 1) == 1):
+        if not (np.sum(data == 0) == MadAction_v0.action_size-1 and np.sum(data == 1) == 1):
             raise ValueError("Data must be one hot")
 
         self.data = data
@@ -347,6 +349,13 @@ class MadAction_v0:
                 attr, attr_value)
 
         return repr_str
+    
+    def max_str_len(self):
+        max_len = int(0)
+        for string in self.action_strings:
+            max_len = max(len(string), max_len)
+        return max_len
+            
 
 
 class MadEnv_v0(gym.Env):
@@ -361,6 +370,9 @@ class MadEnv_v0(gym.Env):
     agent_b = 'Agent B'
 
     def __init__(self):
+        self.show_bar = False
+        self.bar = None
+        self.bar_episode = 0
         self.turn_count = 0
         self.config_path = None
         self.reset()
@@ -372,28 +384,49 @@ class MadEnv_v0(gym.Env):
     def step(self, A):
         A = MadAction_v0(A)
 
-        # Seperate player states
+        # Separate player states
         if self.current_player == self.agent_a:
+            self.A_action = A
             reward, done, winner, info = self.game_dynamics(A)
         else:
+            self.B_action = A
             self.S.swap_agents()  # Game dynamics assumes playing agent is A
-            # Since be is playing, swap agents so that b is a and a is b
+            # Since B is playing, swap agents so that B is A and A is B
             # then swap back
             reward, done, winner, info = self.game_dynamics(A)
+            self.S.swap_agents()
+
             # TODO: Winner is always agent a because it is
             # determined in game dynamics. Fix this.
-            self.S.swap_agents()
+            # temp solution to fix Agent A always winning
+            if (winner == self.agent_a):
+                winner = self.agent_b
+            elif (winner == self.agent_b):
+                winner = self.agent_a
 
         observation = dict()
         observation[self.agent_a] = self.S.observation_a
         observation[self.agent_b] = self.S.observation_b
 
-        self.change_playing_agent()
 
         self.turn_count += 1
+        if self.bar is not None:
+            L = A.max_str_len()
+            postfix = f"A_ac={self.A_action.action_str:>{L}}, B_ac={self.B_action.action_str:>{L}}, winner={winner}"
+            self.bar.set_postfix_str(postfix)
+            self.bar.update()
+        if self.turn_count >= self.config.data["max_episodes"]:
+            done = True
+            if self.bar is not None:
+                self.bar.close()
+                self.bar = None
+
         info['turn_count'] = self.turn_count
         info['action'] = A
         info['winner'] = winner
+        info['player'] = self.current_player
+
+        self.change_playing_agent()
 
         return observation, reward, done, info
 
@@ -525,6 +558,10 @@ class MadEnv_v0(gym.Env):
         else:
             self.current_player = self.agent_a
 
+    def set_show_bar(self, show=True, e = 0):
+        self.show_bar = show
+        self.bar_episode = e
+
     def reset(self):
         self.turn_count = 0
         self.current_player = self.agent_a
@@ -534,10 +571,29 @@ class MadEnv_v0(gym.Env):
         observation[self.agent_a] = self.S.observation_a
         observation[self.agent_b] = self.S.observation_b
 
+        if self.bar is not None:
+            self.bar.close()
+            self.bar = None
+
+        if self.show_bar:
+            self.bar = tqdm(
+                total=self.config.data["max_episodes"], 
+                dynamic_ncols=True, 
+                leave=True,
+                # position=0, 
+                desc=f'MAD Episode {self.bar_episode:5d}'
+            )
+
         return observation
 
     def render(self, mode='human', close=False):
         print(self.S)
+
+    def check_both_nukes(self):
+        """
+        Check if nukes have been acquired by BOTH agents.
+        """
+        return self.S.has_nukes_a and self.S.has_nukes_b
 
     @property
     def observation_size(self):
